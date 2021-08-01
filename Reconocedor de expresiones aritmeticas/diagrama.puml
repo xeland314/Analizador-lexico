@@ -1,0 +1,199 @@
+@startuml RECONOCEDOR
+left to right direction
+
+class funciones <<(M, #FF7700) Modulo>> #DeepSkyBlue ##[bold]DarkBlue
+{
+    include <stdio.h>
+    include <stdlib.h>
+    include <stdbool.h>
+    include <math.h>
+    include <string.h>
+    - define longitud 256
+    + mostrarInfo()
+    - esUnaLetra(): bool
+    - reemplazarLetraPorNumero(char letra): Int
+    - reemplazarNumeroPorLetra(int numero): Char
+    # asignarSigno(char* expresion): Int
+    - calcularParteEnteraNumerica(char parteEntera, int base): long long int
+    - calcularParteDecimalNumerica(char parteDecimal, int base): long double
+    # representarNumericamente(char* expresion, int signoDelNumero, int base): long double
+    + invertirSecuencia()
+    + representarSimbolicamente(long double numero, int base)
+    + imprimirLetra(int indice)
+    + cambiarARomano(double numero)
+    + mostrarResultadoEnTodasLasBases(double numero)
+    + reconocerOperador(char* operador)
+}
+
+package "Numeros" #DDDDDD 
+{
+
+
+class binario <<(M, #FF7700) Modulo>> #AliceBlue ##[bold]Blue
+{
+    # define baseBinaria 2
+    -- struct NumeroBinario --
+    long double representacionNumerica;
+    char* representacionSimbolica;
+    --
+    char* prepararEntrada(): char[]
+    binToDecDouble()
+}
+class ternario <<(M, #FF7700) Modulo>> #LightPink 
+{
+    # define baseTernaria 3
+    -- struct NumeroTernario --
+    long double representacionNumerica;
+    char* representacionSimbolica;
+    --
+    char* prepararEntrada(): char[]
+    terToDecDouble()
+}
+class cuaternario <<(M, #FF7700) Modulo>> #PaleGreen ##[bold]Green
+{
+    # define baseCuaternaria 4
+    -- struct NumeroCuaternario --
+    long double representacionNumerica;
+    char* representacionSimbolica;
+    --
+    char* prepararEntrada(): char[]
+    cuaToDecDouble()
+}
+class quinario <<(M, #FF7700) Modulo>> #AliceBlue ##[bold]Blue
+{
+    # define baseQuinaria 5
+    -- struct NumeroQuinario --
+    long double representacionNumerica;
+    char* representacionSimbolica;
+    --
+    char* prepararEntrada(): char[]
+    quinToDecDouble()
+}
+class senario <<(M, #FF7700) Modulo>> #LightPink
+{
+    # define baseSenaria 6
+    -- struct NumeroSenario --
+    long double representacionNumerica;
+    char* representacionSimbolica;
+    --
+    char* prepararEntrada(): char[]
+    senaToDecDouble()
+}
+class heptal <<(M, #FF7700) Modulo>> #PaleGreen ##[bold]Green
+{
+    # define baseHeptal 7
+    -- struct NumeroHeptal --
+    long double representacionNumerica;
+    char* representacionSimbolica;
+    --
+    char* prepararEntrada(): char[]
+    heptToDecDouble()
+}
+class octal <<(M, #FF7700) Modulo>> #AliceBlue ##[bold]Blue
+{
+    # define baseOctal 8
+    -- struct NumeroOctal --
+    long double representacionNumerica;
+    char* representacionSimbolica;
+    --
+    char* prepararEntrada(): char[]
+    octToDecDouble()
+}
+class nonario <<(M, #FF7700) Modulo>> #LightPink
+{
+    # define baseNonaria 9
+    -- struct NumeroNonario --
+    long double representacionNumerica;
+    char* representacionSimbolica;
+    --
+    char* prepararEntrada(): char[]
+    nonToDecDouble()
+}
+class decimal <<(M, #FF7700) Modulo>> #PaleGreen ##[bold]Green
+{
+    # define baseDecimal 10
+    -- struct NumeroDecimal --
+    long double representacionNumerica;
+    char* representacionSimbolica;
+    --
+    char* prepararEntrada(): char[]
+    decToDecDouble()
+}
+class hexadecimal <<(M, #FF7700) Modulo>> #AliceBlue ##[bold]Blue
+{
+    # defina baseHexadecimal 16
+    -- struct NumeroHexadecimal --
+    long double representacionNumerica;
+    char* representacionSimbolica;
+    --
+    char* prepararEntrada(): char[]
+    hexToDecDouble()
+}
+class romano <<(M, #FF7700) Modulo>> #LightPink
+{
+    -- struct NumeroRomano --
+    long double representacionNumerica;
+    char* representacionSimbolica;
+    --
+    char* prepararEntrada(): char[]
+    romToDecDouble()
+}
+}
+class Reconocedor <<(P, Orchid) Programa>>
+{
+    -- %{ --
+    include <stdio.h>
+    include <stdlib.h>
+    include <string.h>
+    include "binario.h"
+    include "ternaria.h"
+    include "cuaternaria.h"
+    include "quinario.h"
+    include "senario.h"
+    include "heptal.h"
+    include "octal.h"
+    include "nonario.h"
+    include "decimal.h"
+    include "hexadecimal.h"
+    include "romanos.h"
+    -- %} --
+    - ExpresionesRegulares
+    -- %% --
+    + KEYWORD1         
+    + OPERADOR          
+    + ABRIR             
+    + CERRAR            
+    + BINARIO          
+    + TERNARIO          
+    + CUATERNARIO       
+    + QUINARIO          
+    + SENARIO         
+    + HEPTAL            
+    + OCTAL           
+    + NONARIO 
+    + DECIMAL                   
+    + HEXADECIMAL      
+    + ROMANO         
+    + ERROR            
+    + EspaciosTabuladores         
+    + .                   
+    -- %% --
+    int main()
+}
+
+Reconocedor::OPERADOR       -up-> funciones::reconocerOperador #blue
+Reconocedor::KEYWORD1       -up-> funciones::mostrarInfo #blue
+
+Reconocedor::BINARIO        --> binario::binToDecDouble #blue
+Reconocedor::TERNARIO       --> ternario::terToDecDouble
+Reconocedor::CUATERNARIO    --> cuaternario::cuaToDecDouble #green
+Reconocedor::QUINARIO       --> quinario::quinToDecDouble #blue
+Reconocedor::SENARIO        --> senario::senaToDecDouble 
+Reconocedor::HEPTAL         ----> heptal::heptToDecDouble #green
+Reconocedor::OCTAL          --> octal::octToDecDouble #blue
+Reconocedor::NONARIO        --> nonario::nonToDecDouble
+Reconocedor::DECIMAL        --> decimal::decToDecDouble #green
+Reconocedor::HEXADECIMAL    --> hexadecimal::hexToDecDouble #blue
+Reconocedor::ROMANO         --> romano::romToDecDouble
+
+@enduml
