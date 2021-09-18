@@ -193,10 +193,10 @@ $(exec): $(SOURCES)
 
 Se prepara algunas operaciones a realizar:
 
-[img1]: imgs/Captura1.png "entrada.txt"
+[img1]: https://github.dev/xeland314/Analizador-lexico/tree/main/Reconocedor%20de%20expresiones%20matem%C3%A1ticas/imgs/Captura1.png "entrada.txt"
 
 Se ejecuta en la consola: ```./math_app < entrada.txt > salidad.txt```
 
 Resultado:
 
-[img2]: imgs/Captura2.png "salida.txt"
+[img2]: https://github.dev/xeland314/Analizador-lexico/tree/main/Reconocedor%20de%20expresiones%20matem%C3%A1ticas/imgs/Captura2.png "salida.txt"
