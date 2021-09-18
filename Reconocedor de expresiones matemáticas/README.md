@@ -198,6 +198,6 @@ Se ejecuta en la consola: ```./math_app < entrada.txt > salidad.txt```
 Resultado:
 
 <p align="center">
-  <img src="imgs/Captura1.png" width="350" title="entrada.txt">
-  <img src="imgs/Captura2.png" width="350" title="salida.txt">
+  <img src="imgs/Captura1.png" width="500" title="entrada.txt">
+  <img src="imgs/Captura2.png" width="500" title="salida.txt">
 </p>
