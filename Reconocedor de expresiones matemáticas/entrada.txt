@@ -1,0 +1,21 @@
+# Esto es un comentario...                      #
+# Operaciones a realizar:                       #
+# a = -+-cbrt([(100/10/5)^2]*-2))               #
+# b = sqrt(cos([log(10000)]/4-1)*100)/5         #
+# c = sqrt({ln(1) + sen(90º) + ln(e)} * 8)/2    #
+# resultado_final = a + b + c                   #
+    literalA = -+-cbrt([(100/o"12"/b"101")^r"Ii"]*-h"2")
+    literalB = (cos([log(10000)]/o"4"-h"1")*r"C")^(b"0.10")/r"V"
+    literalC = sqrt({ln(r"i")+sen(o"132"º)+ln(euler)}*b"1000")/2
+    resultado_final = literalA + literalB + literalC
+# Muestra todos los resultados:             #
+    tabla_de_valores 
+# Convierte los valores en todas las bases: #
+    convertir(literalA)
+    printline()
+    convertir(literalB)
+    printline()
+    convertir(literalC)
+    printline()
+    convertir(resultado_final)
+    printline()
