@@ -25,7 +25,7 @@ $(exec): $(SOURCES)
 wasm:
 	lex $(LEXFILE)
 	yacc $(yaccflags) $(YACCFILE)
-	/home/xeland314/mybin/zig-linux-x86_64-0.13.0/zig build -Doptimize=ReleaseSmall
+	/home/xeland314/mybin/zig-linux-x86_64-0.13.0/zig build -Doptimize=ReleaseSmall -Dtarget=wasm32-wasi
 
 # 2. Instalación en /bin
 # Se usa sudo porque usualmente /bin requiere permisos de superusuario
@@ -35,5 +35,5 @@ install: $(exec)
 
 # Limpieza de archivos generados
 clean:
-	rm -f $(exec) lex.yy.c y.tab.c y.tab.h y.output
+	rm -rf $(exec) lex.yy.c y.tab.c y.tab.h y.output .zig-cache/
 

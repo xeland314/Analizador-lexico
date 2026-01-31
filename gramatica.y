@@ -19,19 +19,18 @@
     extern int nlines; 
 %}
 %union {
-    long double real;
-    char id[256];
+    double real;
+    char* id;
 }
 /* ESTADO INICIAL DE LA CALCULADORA */
 %start linea
-%type <real> linea NumExpr Termino 
-%type <id>   AsignacionDeVariable
+%type <real> linea NumExpr Termino AsignacionDeVariable
 %token EXIT
 %token CONVERT_ALL
 %token TABLE PRINTL print
 %token ERROR HELP COMENTARIO
 /* TOKENS NUMERICOS */
-%token <id> TKN_ID  
+%token <id> TKN_ID
 %token <real> TKN_NUM
 /* Asignación de variables */
 %token TKN_SUM_ASSIGN TKN_RES_ASSIGN TKN_MUL_ASSIGN TKN_DIV_ASSIGN
@@ -79,23 +78,54 @@ Comandos
     :   EXIT        { exit(EXIT_SUCCESS); }
     |   ERROR       { printf("%sError léxico detectado%s\n", PROJO, NORMAL); }
     |   TABLE       { printTableValues(); }
-    |   NumExpr     { printf("%s\t>>\t%s%.16Lf%s\n", NAMARILLO, CAZUL, $1, NORMAL); }
-    |   print '(' NumExpr ')'  { printf("%s\t>>\t%s%.16Lf%s\n", NAMARILLO, CAZUL, $3, NORMAL); }
+    |   NumExpr     { printf("%s\t>>\t%s%.16f%s\n", NAMARILLO, CAZUL, $1, NORMAL); }
+    |   print '(' NumExpr ')'  { printf("%s\t>>\t%s%.16f%s\n", NAMARILLO, CAZUL, $3, NORMAL); }
     |   HELP        {;}
     |   Conversion  {;}
     |   COMENTARIO  {;}
     |   PRINTL '(' ')' { printf("%s-------------------------------%s\n", HCELESTE, NORMAL); }
     ;
 AsignacionDeVariable
-    :   TKN_ID '=' NumExpr                  { agregarTokenValor($1,$3); }
-    |   TKN_ID TKN_SUM_ASSIGN NumExpr       { agregarTokenValor($1,valorDelToken($1)+$3); }
-    |   TKN_ID TKN_RES_ASSIGN NumExpr       { agregarTokenValor($1,valorDelToken($1)-$3); }
-    |   TKN_ID TKN_MUL_ASSIGN NumExpr       { agregarTokenValor($1,valorDelToken($1)*$3); }
-    |   TKN_ID TKN_DIV_ASSIGN NumExpr       { agregarTokenValor($1,valorDelToken($1)/$3); }
+    :   TKN_ID '=' NumExpr                  {
+            agregarTokenValor($1,$3);
+            $$=$3;
+            free($1);
+        }
+    |   TKN_ID TKN_SUM_ASSIGN NumExpr       {
+            double actual = valorDelToken($1);
+            double nuevo = actual + $3;
+            agregarTokenValor($1, nuevo);
+            $$=nuevo;
+            free($1);
+        }
+    |   TKN_ID TKN_RES_ASSIGN NumExpr       {
+            double actual = valorDelToken($1);
+            double nuevo = actual - $3;
+            agregarTokenValor($1, nuevo);
+            $$=nuevo;
+            free($1);
+        }
+    |   TKN_ID TKN_MUL_ASSIGN NumExpr       {
+            double actual = valorDelToken($1);
+            double nuevo = actual * $3;
+            agregarTokenValor($1, nuevo);
+            $$=nuevo;
+            free($1);
+        }
+    |   TKN_ID TKN_DIV_ASSIGN NumExpr       {
+            double actual = valorDelToken($1);
+            double nuevo = actual / $3;
+            agregarTokenValor($1, nuevo);
+            $$=nuevo;
+            free($1);
+        }
     ;
 Termino 
     :   TKN_NUM             { $$ = $1; }
-    |   TKN_ID              { $$ = valorDelToken($1); }
+    |   TKN_ID              {
+            $$ = valorDelToken($1);
+            free($1); // Vital al usar strdup en Flex
+        }
     ;
 Conversion
     :   BIN '(' NumExpr ')' { toBin($3); }
@@ -117,27 +147,31 @@ NumExpr
     |   '-' NumExpr %prec UNMINUS       { $$ = (-1)*$2; }
     /* POST-INCREMENTO: y++ */
     |   TKN_ID DMAS {
-            long double val = valorDelToken($1);
-            $$ = val; // Devuelve el valor original
-            agregarTokenValor($1, val + 1); // Incrementa en "memoria"
+            double val = valorDelToken($1);
+            agregarTokenValor($1, val + 1);
+            $$ = val;
+            free($1);
         }
     /* POST-DECREMENTO: y-- */
     |   TKN_ID DMENOS {
-            long double val = valorDelToken($1);
-            $$ = val;
+            double val = valorDelToken($1);
             agregarTokenValor($1, val - 1);
+            $$ = val;
+            free($1);
         }
     /* PRE-INCREMENTO: ++y */
     |   DMAS TKN_ID %prec UNPLUS {
-            long double nuevoVal = valorDelToken($2) + 1;
+            double nuevoVal = valorDelToken($2) + 1;
             agregarTokenValor($2, nuevoVal);
             $$ = nuevoVal; // Devuelve el valor ya incrementado
+            free($2);
         }
     /* PRE-DECREMENTO: --y*/
     |   DMENOS TKN_ID %prec UNMINUS {
-            long double nuevoVal = valorDelToken($2) - 1;
+            double nuevoVal = valorDelToken($2) - 1;
             agregarTokenValor($2, nuevoVal);
             $$ = nuevoVal; // Devuelve el valor ya incrementado
+            free($2);
         }
     /* Operaciones normales */
     |   NumExpr '+' NumExpr             { $$ = $1 + $3; }
@@ -199,7 +233,6 @@ void yyerror(char *s) {
 int main()
 {
     setbuf(stdout, NULL);
-    config.cantidadDeTokens = 0;
     printf("\t\t%sRECONOCEDOR DE EXPRESIONES MATEMÁTICAS%s\n", SCELESTE, NORMAL);
     yyparse();
     printf("Se han analizado %s%d%s líneas.\n", NVERDE, nlines, NORMAL);

@@ -86,16 +86,16 @@ long long int calcularParteEnteraNumerica(char parteEntera[longitud], int base)
     return cantidad;
 }
 
-long double calcularParteDecimalNumerica(char parteDecimal[longitud], int base)
+double calcularParteDecimalNumerica(char parteDecimal[longitud], int base)
 {
     int posicionesPorRecorrer = strlen(parteDecimal);
-    long double cantidad = 0;
+    double cantidad = 0;
     int i;
     for (i = 0; i < posicionesPorRecorrer; i++)
     {
         char caracter = parteDecimal[i];
         int valorDelCaracter = (esUnaLetra(caracter)) ? reemplazarLetraPorNumero(caracter) : caracter - '0';
-        long double potencia = pow((double)base, (double)((i+1)*(-1)));
+        double potencia = pow((double)base, (double)((i+1)*(-1)));
         cantidad += valorDelCaracter * potencia;
     }
     return cantidad;
@@ -106,14 +106,14 @@ long double calcularParteDecimalNumerica(char parteDecimal[longitud], int base)
     consola a un número en base 10 para poder realizar 
     operaciones con él. 
  */
-long double representarNumericamente(char expresion[longitud], int signoDelNumero, int base)
+double representarNumericamente(char expresion[longitud], int signoDelNumero, int base)
 {
     //* Inicialización de variables: 
-    long double cantidad = 0;            //? La cantidad que representa el string
+    double cantidad = 0;            //? La cantidad que representa el string
     char* parteEntera;              //? Caracteres de la parte entera
     char* parteFraccional;          //? Caracteres de la parte decimal
     long long int parteEnteraNumerica;        //? Parte Entera de la cantidad representada
-    long double parteDecimalNumerica;    //? Parte Decimal de la cantidad representada
+    double parteDecimalNumerica;    //? Parte Decimal de la cantidad representada
 
     //! Separa la parte entera de la decimal del string
     parteFraccional = strtok(expresion, ".");
@@ -143,7 +143,7 @@ void invertirSecuencia(char secuencia[longitud])
     printf("%s", secuencia);
 }
 
-void representarSimbolicamente(long double numero, int base)
+void representarSimbolicamente(double numero, int base)
 {
     if(numero < 0)
         printf("-");
@@ -153,7 +153,7 @@ void representarSimbolicamente(long double numero, int base)
     int precision = 16;
     unsigned long long int parteEntera = 0;
     double intPart;
-    long double parteFraccional = 0;
+    double parteFraccional = 0;
     int i = 0; 
     int j = 0;
 
@@ -293,7 +293,7 @@ void cambiarARomano(double numero)
     printf("\n");    
 }
 
-void mostrarResultadoEnTodasLasBases(long double numero)
+void mostrarResultadoEnTodasLasBases(double numero)
 {
     printf("%s\tBIN:\t%s", NROJO, NORMAL);
     representarSimbolicamente(numero,2);
@@ -311,63 +311,63 @@ void mostrarResultadoEnTodasLasBases(long double numero)
     representarSimbolicamente(numero,8);
     printf("%s\tNON:\t%s", NROJO, NORMAL);
     representarSimbolicamente(numero,9);
-    printf("%s\tDEC:\t%s%Lf\n", NROJO, NORMAL, numero);
+    printf("%s\tDEC:\t%s%f\n", NROJO, NORMAL, numero);
     printf("%s\tHEX:\t%s", NROJO, NORMAL);
     representarSimbolicamente(numero,16);
     printf("%s\tROM:\t%s", NROJO, NORMAL);
     cambiarARomano(numero);
 }
 
-void toBin(long double numero)
+void toBin(double numero)
 {
     printf("%s\tBIN:\t%s", NROJO, NORMAL);
     representarSimbolicamente(numero,2);
 }
-void toTrn(long double numero)
+void toTrn(double numero)
 {
     printf("%s\tTER:\t%s", NROJO, NORMAL);
     representarSimbolicamente(numero,3);
 }
-void toCtn(long double numero)
+void toCtn(double numero)
 {
     printf("%s\tCUA:\t%s", NROJO, NORMAL);
     representarSimbolicamente(numero,4);
 }
-void toPtl(long double numero)
+void toPtl(double numero)
 {
     printf("%s\tQUI:\t%s", NROJO, NORMAL);
     representarSimbolicamente(numero,5);
 }
-void toSnr(long double numero)
+void toSnr(double numero)
 {
     printf("%s\tSEN:\t%s", NROJO, NORMAL);
     representarSimbolicamente(numero,6);
 }
-void toHpt(long double numero)
+void toHpt(double numero)
 {
     printf("%s\tHEP:\t%s", NROJO, NORMAL);
     representarSimbolicamente(numero,7);
 }
-void toOct(long double numero)
+void toOct(double numero)
 {
     printf("%s\tOCT:\t%s", NROJO, NORMAL);
     representarSimbolicamente(numero,8);    
 }
-void toNnr(long double numero)
+void toNnr(double numero)
 {
     printf("%s\tNON:\t%s", NROJO, NORMAL);
     representarSimbolicamente(numero,9);    
 }
-void toDec(long double numero)
+void toDec(double numero)
 {
-    printf("%s\tDEC:\t%s%Lf\n", NROJO, NORMAL, numero);
+    printf("%s\tDEC:\t%s%f\n", NROJO, NORMAL, numero);
 }
-void toHxd(long double numero)
+void toHxd(double numero)
 {
     printf("%s\tHEX:\t%s", NROJO, NORMAL);
     representarSimbolicamente(numero,16);    
 }
-void toRom(long double numero)
+void toRom(double numero)
 {
     printf("%s\tROM:\t%s", NROJO, NORMAL);
     cambiarARomano(numero);    

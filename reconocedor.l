@@ -252,7 +252,7 @@ GRADOS      "º"|[Dd][Ee][Gg]
 
     /* 4. IDENTIFICADORES */
 
-{IDENTIFICADOR}     { strcpy(yylval.id, yytext); return TKN_ID; }
+{IDENTIFICADOR}     { yylval.id = strdup(yytext); return TKN_ID; }
 
     /* 5. CARACTERES SIMPLES */
 

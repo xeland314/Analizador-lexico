@@ -23,7 +23,7 @@
 
 typedef struct Numeros
 {
-    long double representacionNumerica;
+    double representacionNumerica;
     char representacionSimbolica[longitud];
 } Numero;
 
