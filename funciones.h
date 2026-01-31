@@ -8,6 +8,18 @@
     #define longitud 256
 #endif // !longitud
 
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
+
+#ifndef M_E
+    #define M_E 2.71828182845904523536
+#endif
+
+#ifndef EINTR
+    #define EINTR 4
+#endif
+
 /*! Prototipo de funciones */
 bool esUnaLetra(char letra);
 int reemplazarLetraPorNumero(char letra);

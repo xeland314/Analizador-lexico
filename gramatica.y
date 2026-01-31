@@ -6,10 +6,10 @@
     #include "colores.h"
     #include "controladorDeTokens.h"
     #include "funciones.h"
+    #include "math_2.h"
     #ifndef longitud
         #define longitud 256
     #endif // !longitud
-    #include "gofuncs/math_2.h"
 %}    
 %{
     void yyerror(char* s);
@@ -172,6 +172,7 @@ NumExpr
 void yyerror(char *s) { fprintf(stderr, "%s%s%s\n", PROJO, s, NORMAL); }
 int main()
 {
+    setbuf(stdout, NULL);
     config.cantidadDeTokens = 0;
     printf("\t\t%sRECONOCEDOR DE EXPRESIONES MATEMÁTICAS%s\n", SCELESTE, NORMAL);
     yyparse();

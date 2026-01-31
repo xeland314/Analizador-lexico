@@ -176,6 +176,7 @@ MENOSMENOS  "--"
 AGRUPACION  "("|")"|"["|"]"|"{"|"}"|"|"
 GRADOS      "º"|[Dd][Ee][Gg]
 %option noyywrap
+%option always-interactive
 %%
 "#"[^#\n]*"#"       { return COMENTARIO; } /* Esto descarta los comentarios */
 {SUMAIGUAL}         { return TKN_SUM_ASSIGN;}

@@ -1,0 +1,19 @@
+# Directorios de Zig
+.zig-cache/
+zig-cache/
+zig-out/
+
+# Ejecutable principal
+math_app
+
+# Archivos generados por Lex
+lex.yy.c
+
+# Archivos generados por Yacc/Bison
+y.tab.c
+y.tab.h
+y.output
+
+# Si usas nombres personalizados para los archivos generados
+*.tab.c
+*.tab.h
