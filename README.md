@@ -50,6 +50,8 @@ El programa tiene la capacidad de reconocer números en todas los sistemas numé
 Además, cabe añadir, es capaz de reconocer números en esas bases con decimales. Por ejemplo: ```b"111.11"``` que corresponde al número ```7.75```.
 En el caso de los números binarios, no están en complemento a 2.
 
+*Nota: Los números en bases distintas a la decimal deben estar acotados entre comillas.*
+
 ### Extensión de los números romanos
 
 Los números romanos se representand con las siguientes letras:
@@ -84,109 +86,74 @@ Esto hace posible ingresar valores por consola, en lugar de usar las letras V, X
 
 **Nota:** solo es capaz de representar números romanos enteros. En caso de querer transformar un número con decimales, el programa solo representará la parte entera.
 
-## C & Go
+---
 
-_Go_ o _Golang_ es un lenguaje de programación emergente desarrollado por Google, inspirado en C.
+## Integración Zig & C (Nueva Arquitectura)
 
-Para extender las funciones matemáticas en esta aplicación, se recurre a exportar las definiciones de algunas funciones matemáticas de Go. Por ejemplo, para implementar la función raíz cúbica, inexistente en C.
+Anteriormente, el proyecto utilizaba archivos intermediarios (stubs) y un puente en C para conectar funciones de Go. Ahora, el proyecto utiliza **Zig** como orquestador principal, eliminando la necesidad de `bridge.c` y archivos `.a` externos.
 
-Lo primero que se debe hacer, es tener un archivo como el siguiente llamado ```math_2.go```:
+### ¿Por qué Zig?
 
-```Go
-package main
-
-import (
-    "C"
-    "math"
-)
-
-//export cbrtF
-func cbrtF(x float64) float64 {
-    return math.Cbrt(x)
+1. **Seguridad de Memoria:** La tabla de símbolos utiliza un `StringHashMap` de Zig, gestionando la memoria de los nombres de variables de forma segura con `allocator.dupe`.
+2. **Compatibilidad ABI-C:** Zig exporta funciones que Bison puede llamar directamente sin capas intermedias:
+```zig
+// En Zig (tokens.zig)
+export fn valorDelToken(nombre: [*c]const u8) f64 {
+    const key = std.mem.span(nombre);
+    return tabla.get(key) orelse 0.0;
 }
 
-func main() {}
 ```
+3. **WASM**: Permite compilar a WASM fácilmente.
 
-Cosas importantes a tomar en cuenta de este programa:
+---
 
-- El paquete debe llamarse ```main```.
-- Se debe definir la función a usar con la sintaxis de Go.
-- Necesita importar el paquete ```C```.
-- Necesita importar el paquete ```math```.
-- Necesita el comentario especial ```//export``` más el nombre de la función que puede llamar nuestro programa en C.
+## Ejecución y Compilación
 
-Este archivo se puede compilar como una librería estática ```.a``` de C con el siguiente comando:
+Gracias a que Zig actúa como compilador de C, ya no es necesario configurar complejos archivos `make` manuales. El proceso se centraliza en el sistema de construcción de Zig:
 
-```Go
-go build -buildmode=c-archive math_2.go
-```
+1. **Generar el Analizador Léxico:**
+`lex reconocedor.l`
+2. **Generar el Analizador Sintáctico:**
+`yacc -d proyecto.y`
+3. **Compilar con Zig:**
+- `zig build` o
+- `zig cc -o calculadora lex.yy.c y.tab.c tokens.zig -lm` o
+- make
+4. **Para compilar a WASM**:
+- `make wasm`
 
-Esto genera dos archivos:
 
-- ```math_2.h```:
-Este archivo se incluye en la cabecera de nuestro proyecto. Aquí se encuentra la definición de la función que definimos en Go.
+### Requisitos
 
-```C
-#ifdef __cplusplus
-extern "C" {
-#endif
+* **Flex / Bison** (Instalados en el sistema).
+* **Zig 0.13.0** o superior.
 
-extern GoFloat64 cbrtF(GoFloat64 p0);
+## Ejemplos de Uso
 
-#ifdef __cplusplus
-}
-#endif
-```
 
-- ```math_2.a```:
-Este archivo añadimos al momento de compilar nuestro proyecto con ```gcc```. Añadiendo ```-pthread``` debido a que Go al momento de compilar hace uso de hilos.
+```bash
+# Entrada por consola
+y = 10
+x = y++ + 5
+x
+>> 15.0000000000
+y
+>> 11.0000000000
+convert(255)
+        BIN:    11111111
+        TER:    100110
+        CUA:    3333
+        QUI:    2010
+        SEN:    1103
+        HEP:    513
+        OCT:    377
+        NON:    313
+        DEC:    255.000000
+        HEX:    FF
+        ROM:    CCLV
+exit
 
-Este proceso se realiza para definir otras funciones matemáticas inexistentes en C y algo complicado de definirlas.
-
-Funciones que se implementaron así:
-
-- Acosh(x)
-- Asenh(x)
-- Atanh(x)
-- Hypot(x,y)
-- Cbrt(x)
-- Gamma(x)
-- Factorial: n!
-
-Fuente: [StackOverflow: using-go-code-in-an-existing-c-project](https://stackoverflow.com/questions/32215509/using-go-code-in-an-existing-c-project).
-
-## Ejecución del programa
-
-En la terminal de Ubuntu, se puede ejecutar los siguientes comandos:
-
-- ```yacc -d -v  proyecto.y``` genera los archivos:
-  - ```y.tab.c``` para compilar el programa;
-  - ```y.tab.h``` las etiquetas de los tokens para implementar en el archivo ```.l```. Y, al final,
-  - ```y.output``` un archivo que muestra la resolución de conflictos de la gramática, además de sus estados.
-- ```lex reconocedor.l```: permite usar lex para generar el archivo ```lex.yy.c```.
-- ```gcc y.tab.c funciones.c lex.yy.c gofuncs/math_2.a -pthread -lfl -lm -o math_app```: permite compilar el código ```lex.yy.c```.
-- ```./math_app```: ejecuta el programa.
-
-Es importante a destacar ```-o math_app```, con esto logramos cambiar el nombre final del ejecutable en lugar de que el resultado final sea un ```a.out```.
-```-lm``` permite incluir la librería ```<math.h>```.
-
-Todo esto se realiza fácilmente escribiendo ```make``` en la terminal. En el archivo ```Makefile``` figura todo este proceso de compilación.
-
-```Makefile
-exec = math_app 
-SOURCES = $(wildcard *.c)
-LEXFILE = $(wildcard *.l)
-YACCFILE = $(wildcard *.y)
-AFILES = $(wildcard gofuncs/*.a)
-
-flags = -pthread -lfl -lm
-yaccflags = -d -v 
-
-$(exec): $(SOURCES)
-    lex $(LEXFILE)
-    yacc $(yaccflags) $(YACCFILE)
-    gcc $(SOURCES) $(AFILES) $(flags) -o $(exec)
 ```
 
 ## Ejemplos de ejecución
