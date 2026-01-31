@@ -54,7 +54,7 @@ long double valorDelToken(char *token)
     if(posicionDelToken == -1)
     {
         fprintf(stderr, "ERROR: Token no inicializado (%s)\n", token);
-        exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
     }
     return config.valoresDeTokens[posicionDelToken];
 }

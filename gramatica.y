@@ -72,6 +72,8 @@ linea
     |   AsignacionDeVariable '\n'       {;}
     |   linea Comandos '\n'     {;}
     |   Comandos '\n'           {;}
+    |   linea error '\n'                { yyerrok; } 
+    |   error '\n'                      { yyerrok; }
     ;
 Comandos
     :   EXIT        { exit(EXIT_SUCCESS); }
@@ -90,8 +92,6 @@ AsignacionDeVariable
     |   TKN_ID TKN_RES_ASSIGN NumExpr       { agregarTokenValor($1,valorDelToken($1)-$3); }
     |   TKN_ID TKN_MUL_ASSIGN NumExpr       { agregarTokenValor($1,valorDelToken($1)*$3); }
     |   TKN_ID TKN_DIV_ASSIGN NumExpr       { agregarTokenValor($1,valorDelToken($1)/$3); }
-    |   TKN_ID DMAS                         { agregarTokenValor($1,valorDelToken($1)+1);  }
-    |   TKN_ID DMENOS                       { agregarTokenValor($1,valorDelToken($1)-1);  }
     ;
 Termino 
     :   TKN_NUM             { $$ = $1; }
@@ -115,8 +115,31 @@ NumExpr
     :   Termino                         { $$ = $1;      }
     |   '+' NumExpr %prec UNPLUS        { $$ = $2;      }
     |   '-' NumExpr %prec UNMINUS       { $$ = (-1)*$2; }
-    |   DMENOS NumExpr %prec UNPLUS     { $$ = $2;      }
-    |   DMAS NumExpr %prec UNMINUS      { $$ = $2;      }
+    /* POST-INCREMENTO: y++ */
+    |   TKN_ID DMAS {
+            long double val = valorDelToken($1);
+            $$ = val; // Devuelve el valor original
+            agregarTokenValor($1, val + 1); // Incrementa en "memoria"
+        }
+    /* POST-DECREMENTO: y-- */
+    |   TKN_ID DMENOS {
+            long double val = valorDelToken($1);
+            $$ = val;
+            agregarTokenValor($1, val - 1);
+        }
+    /* PRE-INCREMENTO: ++y */
+    |   DMAS TKN_ID %prec UNPLUS {
+            long double nuevoVal = valorDelToken($2) + 1;
+            agregarTokenValor($2, nuevoVal);
+            $$ = nuevoVal; // Devuelve el valor ya incrementado
+        }
+    /* PRE-DECREMENTO: --y*/
+    |   DMENOS TKN_ID %prec UNMINUS {
+            long double nuevoVal = valorDelToken($2) - 1;
+            agregarTokenValor($2, nuevoVal);
+            $$ = nuevoVal; // Devuelve el valor ya incrementado
+        }
+    /* Operaciones normales */
     |   NumExpr '+' NumExpr             { $$ = $1 + $3; }
     |   NumExpr '-' NumExpr             { $$ = $1 - $3; }
     |   NumExpr '*' NumExpr             { $$ = $1 * $3; }
@@ -169,7 +192,10 @@ NumExpr
     |   NumExpr     '{' NumExpr '}'     { $$ = $1 * $3; }
     ;
 %%
-void yyerror(char *s) { fprintf(stderr, "%s%s%s\n", PROJO, s, NORMAL); }
+void yyerror(char *s) { 
+    // s normalmente contiene "syntax error"
+    fprintf(stderr, "%s>> Error de sintaxis: Verifique la expresión%s\n", PROJO, NORMAL); 
+}
 int main()
 {
     setbuf(stdout, NULL);

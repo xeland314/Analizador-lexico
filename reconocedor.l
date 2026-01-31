@@ -179,12 +179,18 @@ GRADOS      "º"|[Dd][Ee][Gg]
 %option always-interactive
 %%
 "#"[^#\n]*"#"       { return COMENTARIO; } /* Esto descarta los comentarios */
+
+    /* 1. OPERADORES COMPUESTOS PRIMERO */
+
 {SUMAIGUAL}         { return TKN_SUM_ASSIGN;}
 {RESTAIGUAL}        { return TKN_RES_ASSIGN;}
 {MULTIGUAL}         { return TKN_MUL_ASSIGN;}
 {DIVIGUAL}          { return TKN_DIV_ASSIGN;}
 {MASMAS}            { return DMAS; }
 {MENOSMENOS}        { return DMENOS; }
+
+    /* 2. PALABRAS RESERVADAS */
+
 {PRINT}             { return print; }
 {PRINTLINE}         { return PRINTL; }
 {convert}           { return CONVERT_ALL; }
@@ -201,10 +207,12 @@ GRADOS      "º"|[Dd][Ee][Gg]
 {hxd}               { return HXD; }
 {dec}               { return DEC; }
 {rom}               { return ROM; }
+
+    /* 3. NÚMEROS Y CONSTANTES */
+
 {PI}                { yylval.real = M_PI; return TKN_NUM; }
 {EULER}             { yylval.real = M_E; return TKN_NUM; }
 {ABS}               { return TKN_ABS; }
-{GRADOS}            { return deg; }
 {COS}               { return TKN_COS; }
 {SEN}               { return TKN_SEN; }
 {TAN}               { return TKN_TAN; }
@@ -230,8 +238,6 @@ GRADOS      "º"|[Dd][Ee][Gg]
 {CBRT}              { return TKN_CBRT; }
 {GAMMA}             { return TKN_GAMMA; }
 {INFO}              { mostrarInfo(); return HELP; }
-{OPERADOR}          { return *yytext; }
-{AGRUPACION}        { return *yytext; }
 {DECIMAL}           { decToDec(yytext); yylval.real = decimal.representacionNumerica; return TKN_NUM; }
 {BINARIO}           { binToDec(yytext); yylval.real = binario.representacionNumerica; return TKN_NUM;}
 {TERNARIO}          { trnToDec(yytext); yylval.real = ternario.representacionNumerica; return TKN_NUM; }
@@ -243,7 +249,19 @@ GRADOS      "º"|[Dd][Ee][Gg]
 {NONARIO}           { nnrToDec(yytext); yylval.real = nonario.representacionNumerica; return TKN_NUM; }
 {HEXADECIMAL}       { hexToDec(yytext); yylval.real = hexadecimal.representacionNumerica; return TKN_NUM;}
 {ROMANO}            { romToDec(yytext); yylval.real = romano.representacionNumerica; return TKN_NUM;}
+
+    /* 4. IDENTIFICADORES */
+
 {IDENTIFICADOR}     { strcpy(yylval.id, yytext); return TKN_ID; }
+
+    /* 5. CARACTERES SIMPLES */
+
+{OPERADOR}          { return *yytext; }
+{AGRUPACION}        { return *yytext; }
+{GRADOS}            { return deg; }
+
+    /* 6. MANEJO DE ERRORES Y ESPACIOS */
+
 {ERROR}             { printf("Secuencia no válida: %s\n", yytext); return ERROR; }
 [ \t\r]+            /* Ignora todos los tabuladores y espacios */
 [\n]                { nlines++; return *yytext; }
