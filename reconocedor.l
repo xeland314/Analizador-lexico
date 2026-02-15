@@ -166,7 +166,7 @@ LOG2        [Ll][Oo][Gg](2)
 EXP         [Ee][Xx][Pp]
 GAMMA       [Gg][Aa][Mm]{1,2}[Aa]
 /* Signos */
-OPERADOR    (=|\+|\-|\*|\/|\^|%|"!"|",")
+OPERADOR    (=|\+|\-|\*|\/|\^|%|"!"|","|"?"|":")
 SUMAIGUAL   "+="
 RESTAIGUAL  "-="
 MULTIGUAL   "*="

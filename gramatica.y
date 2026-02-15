@@ -53,6 +53,7 @@
 %token BIN TRN CTN PTL SNR HPT OCT NNR HXD DEC ROM 
 /*PRECEDENCIA DE LOS SIMBOLOS MATEMATICOS */
 %right  '=' TKN_SUM_ASSIGN TKN_RES_ASSIGN TKN_MUL_ASSIGN TKN_DIV_ASSIGN
+%right  '?' ':'
 %left   TKN_OR TKN_NOR
 %left   TKN_XOR
 %left   TKN_AND
@@ -193,6 +194,7 @@ NumExpr
     |   NumExpr TKN_LE NumExpr          { $$ = ($1 <= $3); }
     |   NumExpr TKN_GT NumExpr          { $$ = ($1 > $3);  }
     |   NumExpr TKN_GE NumExpr          { $$ = ($1 >= $3); }
+    |   NumExpr '?' NumExpr ':' NumExpr { $$ = ($1 != 0) ? $3 : $5; }
     |   NumExpr TKN_AND NumExpr         { $$ = (double)((int)$1 && (int)$3); }
     |   NumExpr TKN_OR  NumExpr         { $$ = (double)((int)$1 || (int)$3); }
     |   NumExpr TKN_XOR NumExpr         { $$ = (double)((int)$1 ^ (int)$3);  }

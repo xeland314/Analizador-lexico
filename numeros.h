@@ -120,7 +120,7 @@ void nnrToDec(char expresion[longitud]) { transformarALaBase(&nonario, expresion
 void hexToDec(char expresion[longitud])
 {
     int signoDelNumero;       //? Puede ser negativo o positivo
-    asignarSigno(expresion);
+    signoDelNumero = asignarSigno(expresion);
     char* representacionSimbolica = prepararEntradaRH(expresion);
     strcpy(hexadecimal.representacionSimbolica, expresion);
     hexadecimal.representacionNumerica = representarNumericamente(representacionSimbolica, signoDelNumero, baseHexadecimal);

@@ -42,7 +42,7 @@ void funcionesMatematicas()
 void operadoresYAsignaciones()
 {
     printf("%sOperadores y Variables:%s\n", CCELESTE, NORMAL);
-    printf("\t%sBásicos:%s +, -, *, /, %%, ^, !, |, ()\n", NAZUL, NORMAL);
+    printf("\t%sBásicos:%s +, -, *, /, %%, ^, !, |, (), ? :\n", NAZUL, NORMAL);
     printf("\t%sComparación:%s ==, !=, <, <=, >, >=\n", NAZUL, NORMAL);
     printf("\t%sLógicos:%s &&, ||, !, XOR, NOR\n", NAZUL, NORMAL);
     printf("\t%sAsignación:%s = , += , -= , *= , /=\n", NAZUL, NORMAL);
