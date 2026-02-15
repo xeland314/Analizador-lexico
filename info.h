@@ -43,6 +43,8 @@ void operadoresYAsignaciones()
 {
     printf("%sOperadores y Variables:%s\n", CCELESTE, NORMAL);
     printf("\t%sBásicos:%s +, -, *, /, %%, ^, !, |, ()\n", NAZUL, NORMAL);
+    printf("\t%sComparación:%s ==, !=, <, <=, >, >=\n", NAZUL, NORMAL);
+    printf("\t%sLógicos:%s &&, ||, !, XOR, NOR\n", NAZUL, NORMAL);
     printf("\t%sAsignación:%s = , += , -= , *= , /=\n", NAZUL, NORMAL);
     printf("\t%sInc/Dec:%s ++var, --var, var++, var--\n", NAZUL, NORMAL);
     printf("\t%sVariables:%s x = 10, y = b\"1010\"\n", NAZUL, NORMAL);

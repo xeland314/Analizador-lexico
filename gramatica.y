@@ -32,6 +32,10 @@
 /* TOKENS NUMERICOS */
 %token <id> TKN_ID
 %token <real> TKN_NUM
+/* Comparadores */
+%token TKN_EQ TKN_NE TKN_LT TKN_LE TKN_GT TKN_GE
+/* Operadores Lógicos */
+%token TKN_AND TKN_OR TKN_XOR TKN_NOR
 /* Asignación de variables */
 %token TKN_SUM_ASSIGN TKN_RES_ASSIGN TKN_MUL_ASSIGN TKN_DIV_ASSIGN
 /* OPERACIONES BASICAS */
@@ -49,6 +53,11 @@
 %token BIN TRN CTN PTL SNR HPT OCT NNR HXD DEC ROM 
 /*PRECEDENCIA DE LOS SIMBOLOS MATEMATICOS */
 %right  '=' TKN_SUM_ASSIGN TKN_RES_ASSIGN TKN_MUL_ASSIGN TKN_DIV_ASSIGN
+%left   TKN_OR TKN_NOR
+%left   TKN_XOR
+%left   TKN_AND
+%left   TKN_EQ TKN_NE
+%left   TKN_LT TKN_LE TKN_GT TKN_GE
 %left   '+' '-'
 %left   '*' '/'
 %left   '%' '!'
@@ -60,7 +69,7 @@
 %right  TKN_ACOSH TKN_ASENH TKN_ATANH
 %right  TKN_ACOS TKN_ASEN TKN_ATAN TKN_ATAN2
 %right  TKN_GAMMA TKN_HYPOT
-%right  UNMINUS UNPLUS
+%right  UNMINUS UNPLUS LNOT
 %nonassoc '(' ')'
 %nonassoc '[' ']'
 %nonassoc '{' '}'
@@ -178,6 +187,17 @@ NumExpr
     |   NumExpr '-' NumExpr             { $$ = $1 - $3; }
     |   NumExpr '*' NumExpr             { $$ = $1 * $3; }
     |   NumExpr '/' NumExpr             { $$ = $1 / $3; }
+    |   NumExpr TKN_EQ NumExpr          { $$ = ($1 == $3); }
+    |   NumExpr TKN_NE NumExpr          { $$ = ($1 != $3); }
+    |   NumExpr TKN_LT NumExpr          { $$ = ($1 < $3);  }
+    |   NumExpr TKN_LE NumExpr          { $$ = ($1 <= $3); }
+    |   NumExpr TKN_GT NumExpr          { $$ = ($1 > $3);  }
+    |   NumExpr TKN_GE NumExpr          { $$ = ($1 >= $3); }
+    |   NumExpr TKN_AND NumExpr         { $$ = (double)((int)$1 && (int)$3); }
+    |   NumExpr TKN_OR  NumExpr         { $$ = (double)((int)$1 || (int)$3); }
+    |   NumExpr TKN_XOR NumExpr         { $$ = (double)((int)$1 ^ (int)$3);  }
+    |   NumExpr TKN_NOR NumExpr         { $$ = (double)!((int)$1 || (int)$3); }
+    |   '!' NumExpr %prec LNOT          { $$ = (double)!((int)$2); }
     |   NumExpr '%' NumExpr             { $$ = fmod($1,$3);     }
     |   NumExpr '!'                     { $$ = factorial($1);   }
     |   NumExpr '^' NumExpr             { $$ = pow($1,$3);     }

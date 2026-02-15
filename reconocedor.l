@@ -173,6 +173,16 @@ MULTIGUAL   "*="
 DIVIGUAL    "/="
 MASMAS      "++"
 MENOSMENOS  "--"
+EQ          "=="
+NE          "!="
+LE          "<="
+GE          ">="
+LT          "<"
+GT          ">"
+AND         "&&"
+OR          "||"
+XOR         [Xx][Oo][Rr]
+NOR         [Nn][Oo][Rr]
 AGRUPACION  "("|")"|"["|"]"|"{"|"}"|"|"
 GRADOS      "º"|[Dd][Ee][Gg]
 %option noyywrap
@@ -188,6 +198,16 @@ GRADOS      "º"|[Dd][Ee][Gg]
 {DIVIGUAL}          { return TKN_DIV_ASSIGN;}
 {MASMAS}            { return DMAS; }
 {MENOSMENOS}        { return DMENOS; }
+{EQ}                { return TKN_EQ; }
+{NE}                { return TKN_NE; }
+{LE}                { return TKN_LE; }
+{GE}                { return TKN_GE; }
+{LT}                { return TKN_LT; }
+{GT}                { return TKN_GT; }
+{AND}               { return TKN_AND; }
+{OR}                { return TKN_OR; }
+{XOR}               { return TKN_XOR; }
+{NOR}               { return TKN_NOR; }
 
     /* 2. PALABRAS RESERVADAS */
 
