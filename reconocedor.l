@@ -2,7 +2,7 @@
     #include <stdio.h>
     #include <stdlib.h>
     #include <string.h>
-    #include "y.tab.h"
+    #include "gramatica.tab.h"
     #include "info.h"
     #include "numeros.h"
     #include "colores.h"
@@ -173,6 +173,7 @@ MULTIGUAL   "*="
 DIVIGUAL    "/="
 MASMAS      "++"
 MENOSMENOS  "--"
+ARROW       "=>"|"->"
 EQ          "=="
 NE          "!="
 LE          "<="
@@ -185,8 +186,11 @@ XOR         [Xx][Oo][Rr]
 NOR         [Nn][Oo][Rr]
 AGRUPACION  "("|")"|"["|"]"|"{"|"}"|"|"
 GRADOS      "º"|[Dd][Ee][Gg]
+%x BODY
 %option noyywrap
 %option always-interactive
+%option reentrant
+%option bison-bridge
 %%
 "#"[^#\n]*"#"       { return COMENTARIO; } /* Esto descarta los comentarios */
 
@@ -198,6 +202,8 @@ GRADOS      "º"|[Dd][Ee][Gg]
 {DIVIGUAL}          { return TKN_DIV_ASSIGN;}
 {MASMAS}            { return DMAS; }
 {MENOSMENOS}        { return DMENOS; }
+{ARROW}             { BEGIN(BODY); return TKN_ARROW; }
+<BODY>[^\n\r]+      { yylval->id = strdup(yytext); BEGIN(INITIAL); return TKN_BODY; }
 {EQ}                { return TKN_EQ; }
 {NE}                { return TKN_NE; }
 {LE}                { return TKN_LE; }
@@ -230,8 +236,8 @@ GRADOS      "º"|[Dd][Ee][Gg]
 
     /* 3. NÚMEROS Y CONSTANTES */
 
-{PI}                { yylval.real = M_PI; return TKN_NUM; }
-{EULER}             { yylval.real = M_E; return TKN_NUM; }
+{PI}                { yylval->real = M_PI; return TKN_NUM; }
+{EULER}             { yylval->real = M_E; return TKN_NUM; }
 {ABS}               { return TKN_ABS; }
 {COS}               { return TKN_COS; }
 {SEN}               { return TKN_SEN; }
@@ -258,21 +264,21 @@ GRADOS      "º"|[Dd][Ee][Gg]
 {CBRT}              { return TKN_CBRT; }
 {GAMMA}             { return TKN_GAMMA; }
 {INFO}              { mostrarInfo(); return HELP; }
-{DECIMAL}           { decToDec(yytext); yylval.real = decimal.representacionNumerica; return TKN_NUM; }
-{BINARIO}           { binToDec(yytext); yylval.real = binario.representacionNumerica; return TKN_NUM;}
-{TERNARIO}          { trnToDec(yytext); yylval.real = ternario.representacionNumerica; return TKN_NUM; }
-{CUATERNARIO}       { ctnToDec(yytext); yylval.real = cuaternario.representacionNumerica; return TKN_NUM;}
-{QUINARIO}          { ptlToDec(yytext); yylval.real = quinario.representacionNumerica; return TKN_NUM;}
-{SENARIO}           { snrToDec(yytext); yylval.real = senario.representacionNumerica; return TKN_NUM;}
-{HEPTAL}            { hptToDec(yytext); yylval.real = heptal.representacionNumerica; return TKN_NUM;}
-{OCTAL}             { octToDec(yytext); yylval.real = octal.representacionNumerica; return TKN_NUM; }
-{NONARIO}           { nnrToDec(yytext); yylval.real = nonario.representacionNumerica; return TKN_NUM; }
-{HEXADECIMAL}       { hexToDec(yytext); yylval.real = hexadecimal.representacionNumerica; return TKN_NUM;}
-{ROMANO}            { romToDec(yytext); yylval.real = romano.representacionNumerica; return TKN_NUM;}
+{DECIMAL}           { decToDec(yytext); yylval->real = decimal.representacionNumerica; return TKN_NUM; }
+{BINARIO}           { binToDec(yytext); yylval->real = binario.representacionNumerica; return TKN_NUM;}
+{TERNARIO}          { trnToDec(yytext); yylval->real = ternario.representacionNumerica; return TKN_NUM; }
+{CUATERNARIO}       { ctnToDec(yytext); yylval->real = cuaternario.representacionNumerica; return TKN_NUM;}
+{QUINARIO}          { ptlToDec(yytext); yylval->real = quinario.representacionNumerica; return TKN_NUM;}
+{SENARIO}           { snrToDec(yytext); yylval->real = senario.representacionNumerica; return TKN_NUM;}
+{HEPTAL}            { hptToDec(yytext); yylval->real = heptal.representacionNumerica; return TKN_NUM;}
+{OCTAL}             { octToDec(yytext); yylval->real = octal.representacionNumerica; return TKN_NUM; }
+{NONARIO}           { nnrToDec(yytext); yylval->real = nonario.representacionNumerica; return TKN_NUM; }
+{HEXADECIMAL}       { hexToDec(yytext); yylval->real = hexadecimal.representacionNumerica; return TKN_NUM;}
+{ROMANO}            { romToDec(yytext); yylval->real = romano.representacionNumerica; return TKN_NUM;}
 
     /* 4. IDENTIFICADORES */
 
-{IDENTIFICADOR}     { yylval.id = strdup(yytext); return TKN_ID; }
+{IDENTIFICADOR}     { yylval->id = strdup(yytext); return TKN_ID; }
 
     /* 5. CARACTERES SIMPLES */
 
@@ -284,6 +290,6 @@ GRADOS      "º"|[Dd][Ee][Gg]
 
 {ERROR}             { printf("Secuencia no válida: %s\n", yytext); return ERROR; }
 [ \t\r]+            /* Ignora todos los tabuladores y espacios */
-[\n]                { nlines++; return *yytext; }
+[\n]                { return *yytext; }
 .                   { printf("Cáracter no reconocido: %s\n", yytext); return ERROR; }
 %%

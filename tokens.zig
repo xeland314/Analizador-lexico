@@ -6,14 +6,50 @@ const allocator = std.heap.c_allocator;
 
 // Ya no la hacemos opcional, la inicializaremos mediante una función
 var symbol_table: std.StringHashMap(f64) = undefined;
+var function_table: std.StringHashMap([]const u8) = undefined;
 var initialized: bool = false;
 
 fn getTable() *std.StringHashMap(f64) {
     if (!initialized) {
         symbol_table = std.StringHashMap(f64).init(allocator);
+        function_table = std.StringHashMap([]const u8).init(allocator);
         initialized = true;
     }
     return &symbol_table;
+}
+
+fn getFuncTable() *std.StringHashMap([]const u8) {
+    _ = getTable();
+    return &function_table;
+}
+
+export fn agregarFuncion(nombre: [*c]const u8, cuerpo: [*c]const u8) callconv(.C) void {
+    const table = getFuncTable();
+    const key = std.mem.span(nombre);
+    const body = std.mem.span(cuerpo);
+
+    if (table.getPtr(key)) |v| {
+        allocator.free(v.*);
+        v.* = allocator.dupe(u8, body) catch return;
+        return;
+    }
+
+    const owned_key = allocator.dupe(u8, key) catch return;
+    const owned_body = allocator.dupe(u8, body) catch {
+        allocator.free(owned_key);
+        return;
+    };
+    table.put(owned_key, owned_body) catch {
+        allocator.free(owned_key);
+        allocator.free(owned_body);
+    };
+}
+
+export fn obtenerCuerpoFuncion(nombre: [*c]const u8) callconv(.C) [*c]const u8 {
+    const table = getFuncTable();
+    const key = std.mem.span(nombre);
+    const body = table.get(key) orelse return null;
+    return body.ptr;
 }
 
 export fn agregarTokenValor(token: [*c]const u8, valor: f64) callconv(.C) void {

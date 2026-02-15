@@ -3,6 +3,7 @@ ZIG = /home/xeland314/mybin/zig-linux-x86_64-0.13.0/zig
 EXEC = zig-out/bin/calculadora
 SOURCES = lex.yy.c y.tab.c tokens.zig
 LEXFILE = $(wildcard *.l)
+YACC = bison
 YACCFILE = $(wildcard *.y)
 
 # Flags para Zig actuando como compilador de C
@@ -15,7 +16,7 @@ all: $(EXEC)
 
 $(EXEC): $(LEXFILE) $(YACCFILE)
 	lex $(LEXFILE)
-	yacc $(YACCFLAGS) $(YACCFILE)
+	$(YACC) $(YACCFLAGS) $(YACCFILE)
 	@mkdir -p zig-out/bin
 	$(ZIG) build
 

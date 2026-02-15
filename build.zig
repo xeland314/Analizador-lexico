@@ -30,7 +30,7 @@ pub fn build(b: *std.Build) void {
     
     exe.addCSourceFiles(.{
         .files = &.{
-            "y.tab.c",
+            "gramatica.tab.c",
             "lex.yy.c",
             "funciones.c",
             "math_2.c",

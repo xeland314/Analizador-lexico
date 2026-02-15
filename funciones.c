@@ -372,3 +372,52 @@ void toRom(double numero)
     printf("%s\tROM:\t%s", NROJO, NORMAL);
     cambiarARomano(numero);    
 }
+
+/* Implementación de la evaluación recursiva */
+#include "gramatica.tab.h"
+
+/* Implementación de la evaluación recursiva */
+#include "gramatica.tab.h"
+
+// Declaraciones de Flex para re-entrancia
+typedef struct yy_buffer_state *YY_BUFFER_STATE;
+extern int yylex_init(void** scanner);
+extern int yylex_destroy(void* scanner);
+extern YY_BUFFER_STATE yy_scan_string(const char *str, void* scanner);
+extern void yy_delete_buffer(YY_BUFFER_STATE buffer, void* scanner);
+
+extern int yyparse(ParserContext* ctx);
+extern double valorDelToken(const char* token);
+extern void agregarTokenValor(const char* token, double valor);
+
+double evaluarCuerpo(const char* cuerpo, double arg) {
+    // 1. Guardar x actual
+    double old_x = valorDelToken("x");
+    agregarTokenValor("x", arg);
+
+    // 2. Preparar cuerpo con un newline (requerido por la gramática)
+    char buffer_cuerpo[512];
+    snprintf(buffer_cuerpo, sizeof(buffer_cuerpo), "%s\n", cuerpo);
+
+    // 3. Inicializar nuevo escáner para el sub-análisis
+    void* sub_scanner;
+    yylex_init(&sub_scanner);
+    YY_BUFFER_STATE bp = yy_scan_string(buffer_cuerpo, sub_scanner);
+
+    // 4. Configurar contexto del parser
+    ParserContext sub_ctx;
+    sub_ctx.scanner = sub_scanner;
+    sub_ctx.last_result = 0;
+    sub_ctx.is_sub_eval = 1;
+
+    // 5. Ejecutar sub-parser
+    yyparse(&sub_ctx);
+
+    // 6. Limpiar
+    yy_delete_buffer(bp, sub_scanner);
+    yylex_destroy(sub_scanner);
+    
+    // 7. Restaurar x y retornar resultado
+    agregarTokenValor("x", old_x);
+    return sub_ctx.last_result;
+}

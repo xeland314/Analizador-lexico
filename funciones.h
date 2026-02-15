@@ -45,4 +45,9 @@ void toDec(double numero);
 void toHxd(double numero);
 void toRom(double numero);
 
+/*! Funciones para el lenguaje */
+void agregarFuncion(const char* nombre, const char* cuerpo);
+const char* obtenerCuerpoFuncion(const char* nombre);
+double evaluarCuerpo(const char* cuerpo, double arg);
+
 #endif 

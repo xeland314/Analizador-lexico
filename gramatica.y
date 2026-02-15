@@ -1,3 +1,12 @@
+%code requires {
+    typedef struct {
+        double last_result;
+        void* scanner;
+        int is_sub_eval;
+        int nlines;
+    } ParserContext;
+}
+
 %{
     #include <stdio.h>
     #include <stdlib.h>
@@ -11,13 +20,20 @@
         #define longitud 256
     #endif // !longitud
 %}    
-%{
-    void yyerror(char* s);
-    int yylex(void);
-    extern char *yytext;
-    extern FILE *yyin;
-    extern int nlines; 
-%}
+%expect 4
+%define api.pure full
+%param { ParserContext* ctx }
+
+%code {
+    void yyerror(ParserContext* ctx, const char* s);
+    int yylex(YYSTYPE* yylval, void* scanner);
+    #define yylex(yylval, ctx) yylex(yylval, (ctx)->scanner)
+
+    extern int yylex_init(void** scanner);
+    extern int yylex_destroy(void* scanner);
+    extern void yyset_in(FILE* in_str, void* scanner);
+}
+
 %union {
     double real;
     char* id;
@@ -32,6 +48,8 @@
 /* TOKENS NUMERICOS */
 %token <id> TKN_ID
 %token <real> TKN_NUM
+%token TKN_ARROW
+%token <id> TKN_BODY
 /* Comparadores */
 %token TKN_EQ TKN_NE TKN_LT TKN_LE TKN_GT TKN_GE
 /* Operadores Lógicos */
@@ -77,19 +95,25 @@
 %right    '|' 
 %%
 linea
-    :   linea AsignacionDeVariable '\n' {;}
-    |   AsignacionDeVariable '\n'       {;}
-    |   linea Comandos '\n'     {;}
-    |   Comandos '\n'           {;}
-    |   linea error '\n'                { yyerrok; } 
-    |   error '\n'                      { yyerrok; }
+    :   linea AsignacionDeVariable '\n' { ctx->nlines++; }
+    |   AsignacionDeVariable '\n'       { ctx->nlines++; }
+    |   linea Comandos '\n'     { ctx->nlines++; }
+    |   Comandos '\n'           { ctx->nlines++; }
+    |   linea error '\n'                { ctx->nlines++; yyerrok; } 
+    |   error '\n'                      { ctx->nlines++; yyerrok; }
     ;
 Comandos
     :   EXIT        { exit(EXIT_SUCCESS); }
     |   ERROR       { printf("%sError léxico detectado%s\n", PROJO, NORMAL); }
     |   TABLE       { printTableValues(); }
-    |   NumExpr     { printf("%s\t>>\t%s%.16f%s\n", NAMARILLO, CAZUL, $1, NORMAL); }
-    |   print '(' NumExpr ')'  { printf("%s\t>>\t%s%.16f%s\n", NAMARILLO, CAZUL, $3, NORMAL); }
+    |   NumExpr     { 
+            ctx->last_result = $1;
+            if (!ctx->is_sub_eval) printf("%s\t>>\t%s%.16f%s\n", NAMARILLO, CAZUL, $1, NORMAL); 
+        }
+    |   print '(' NumExpr ')'  { 
+            ctx->last_result = $3;
+            if (!ctx->is_sub_eval) printf("%s\t>>\t%s%.16f%s\n", NAMARILLO, CAZUL, $3, NORMAL); 
+        }
     |   HELP        {;}
     |   Conversion  {;}
     |   COMENTARIO  {;}
@@ -98,36 +122,43 @@ Comandos
 AsignacionDeVariable
     :   TKN_ID '=' NumExpr                  {
             agregarTokenValor($1,$3);
-            $$=$3;
+            $$=$3; ctx->last_result = $3;
             free($1);
         }
     |   TKN_ID TKN_SUM_ASSIGN NumExpr       {
             double actual = valorDelToken($1);
             double nuevo = actual + $3;
             agregarTokenValor($1, nuevo);
-            $$=nuevo;
+            $$=nuevo; ctx->last_result = nuevo;
             free($1);
         }
     |   TKN_ID TKN_RES_ASSIGN NumExpr       {
             double actual = valorDelToken($1);
             double nuevo = actual - $3;
             agregarTokenValor($1, nuevo);
-            $$=nuevo;
+            $$=nuevo; ctx->last_result = nuevo;
             free($1);
         }
     |   TKN_ID TKN_MUL_ASSIGN NumExpr       {
             double actual = valorDelToken($1);
             double nuevo = actual * $3;
             agregarTokenValor($1, nuevo);
-            $$=nuevo;
+            $$=nuevo; ctx->last_result = nuevo;
             free($1);
         }
     |   TKN_ID TKN_DIV_ASSIGN NumExpr       {
             double actual = valorDelToken($1);
             double nuevo = actual / $3;
             agregarTokenValor($1, nuevo);
-            $$=nuevo;
+            $$=nuevo; ctx->last_result = nuevo;
             free($1);
+        }
+    /* Definición de función: f(x) => x^2 */
+    |   TKN_ID '(' TKN_ID ')' TKN_ARROW TKN_BODY {
+            agregarFuncion($1, $6);
+            printf("%sFunción registrada:%s %s(%s) => %s\n", NVERDE, NORMAL, $1, $3, $6);
+            $$ = 0; // Por ahora retorna 0 la definición
+            free($1); free($3); free($6);
         }
     ;
 Termino 
@@ -242,21 +273,43 @@ NumExpr
     |   TKN_LOG2    '(' NumExpr ')'     { $$ = log2F($3); }
     |   TKN_GAMMA   '(' NumExpr ')'     { $$ = gammaF($3); }
     |   TKN_HYPOT   '(' NumExpr ',' NumExpr ')' { $$ = hypotF($3,$5);}
+    /* Llamada a función: f(10) */
+    |   TKN_ID '(' NumExpr ')' {
+            const char* cuerpo = obtenerCuerpoFuncion($1);
+            if (cuerpo) {
+                $$ = evaluarCuerpo(cuerpo, $3);
+            } else {
+                $$ = valorDelToken($1) * $3;
+            }
+            free($1);
+        }
     |   NumExpr     '|' NumExpr '|'     { $$ = $1 * fabs($3); }
     |   NumExpr     '(' NumExpr ')'     { $$ = $1 * $3; }
     |   NumExpr     '[' NumExpr ']'     { $$ = $1 * $3; }
     |   NumExpr     '{' NumExpr '}'     { $$ = $1 * $3; }
     ;
 %%
-void yyerror(char *s) { 
-    // s normalmente contiene "syntax error"
+void yyerror(ParserContext* ctx, char const *s) { 
     fprintf(stderr, "%s>> Error de sintaxis: Verifique la expresión%s\n", PROJO, NORMAL); 
 }
 int main()
 {
     setbuf(stdout, NULL);
     printf("\t\t%sRECONOCEDOR DE EXPRESIONES MATEMÁTICAS%s\n", SCELESTE, NORMAL);
-    yyparse();
-    printf("Se han analizado %s%d%s líneas.\n", NVERDE, nlines, NORMAL);
+    
+    void* scanner;
+    yylex_init(&scanner);
+    yyset_in(stdin, scanner);
+    
+    ParserContext ctx;
+    ctx.scanner = scanner;
+    ctx.last_result = 0;
+    ctx.is_sub_eval = 0;
+    ctx.nlines = 0;
+
+    yyparse(&ctx);
+    
+    printf("Se han analizado %s%d%s líneas.\n", NVERDE, ctx.nlines, NORMAL);
+    yylex_destroy(scanner);
     return 0;
 }
