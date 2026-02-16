@@ -46,8 +46,8 @@ void toHxd(double numero);
 void toRom(double numero);
 
 /*! Funciones para el lenguaje */
-void agregarFuncion(const char* nombre, const char* cuerpo);
+void agregarFuncion(const char* nombre, const char* params, const char* cuerpo);
 const char* obtenerCuerpoFuncion(const char* nombre);
-double evaluarCuerpo(const char* cuerpo, double arg);
+double evaluarCuerpoMultiparams(const char* nombre_func, double* args, int num_args);
 
 #endif 

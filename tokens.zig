@@ -23,25 +23,28 @@ fn getFuncTable() *std.StringHashMap([]const u8) {
     return &function_table;
 }
 
-export fn agregarFuncion(nombre: [*c]const u8, cuerpo: [*c]const u8) callconv(.C) void {
+export fn agregarFuncion(nombre: [*c]const u8, params: [*c]const u8, cuerpo: [*c]const u8) callconv(.C) void {
     const table = getFuncTable();
     const key = std.mem.span(nombre);
+    const p = std.mem.span(params);
     const body = std.mem.span(cuerpo);
+
+    // Formato: "param1,param2|cuerpo"
+    const full_def = std.fmt.allocPrint(allocator, "{s}|{s}", .{ p, body }) catch return;
 
     if (table.getPtr(key)) |v| {
         allocator.free(v.*);
-        v.* = allocator.dupe(u8, body) catch return;
+        v.* = full_def;
         return;
     }
 
-    const owned_key = allocator.dupe(u8, key) catch return;
-    const owned_body = allocator.dupe(u8, body) catch {
-        allocator.free(owned_key);
+    const owned_key = allocator.dupe(u8, key) catch {
+        allocator.free(full_def);
         return;
     };
-    table.put(owned_key, owned_body) catch {
+    table.put(owned_key, full_def) catch {
         allocator.free(owned_key);
-        allocator.free(owned_body);
+        allocator.free(full_def);
     };
 }
 

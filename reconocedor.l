@@ -25,6 +25,8 @@ COMILLA     [\"]
 /* Palabras resevadas */
 PRINT       [Pp][Rr][Ii][Nn][Tt]
 PRINTLINE   {PRINT}[Ll][Ii][Nn][Ee]
+IF          [Ii][Ff]
+ELSE        [Ee][Ll][Ss][Ee]
 INFO        ([Ii][Nn][Ff][Oo])|([Hh][Ee][Ll][Pp])
 convert     "convertir"|"convert"|"cambio_de_base"
 tableValues "tabla_de_valores"|"registro_de_valores"
@@ -166,7 +168,7 @@ LOG2        [Ll][Oo][Gg](2)
 EXP         [Ee][Xx][Pp]
 GAMMA       [Gg][Aa][Mm]{1,2}[Aa]
 /* Signos */
-OPERADOR    (=|\+|\-|\*|\/|\^|%|"!"|","|"?"|":")
+OPERADOR    (=|\+|\-|\*|\/|\^|%|"!"|","|"?"|":"|";")
 SUMAIGUAL   "+="
 RESTAIGUAL  "-="
 MULTIGUAL   "*="
@@ -219,6 +221,8 @@ GRADOS      "º"|[Dd][Ee][Gg]
 
 {PRINT}             { return print; }
 {PRINTLINE}         { return PRINTL; }
+{IF}                { return TKN_IF; }
+{ELSE}              { return TKN_ELSE; }
 {convert}           { return CONVERT_ALL; }
 {tableValues}       { return TABLE; }
 {exit}              { return EXIT; }

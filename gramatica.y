@@ -5,6 +5,12 @@
         int is_sub_eval;
         int nlines;
     } ParserContext;
+
+    typedef struct {
+        double vals[10];
+        char* names[10];
+        int count;
+    } CustomList;
 }
 
 %{
@@ -18,58 +24,50 @@
     #include "math_2.h"
     #ifndef longitud
         #define longitud 256
-    #endif // !longitud
+    #endif
 %}    
-%expect 4
-%define api.pure full
-%param { ParserContext* ctx }
 
-%code {
-    void yyerror(ParserContext* ctx, const char* s);
-    int yylex(YYSTYPE* yylval, void* scanner);
-    #define yylex(yylval, ctx) yylex(yylval, (ctx)->scanner)
-
-    extern int yylex_init(void** scanner);
-    extern int yylex_destroy(void* scanner);
-    extern void yyset_in(FILE* in_str, void* scanner);
-}
+%glr-parser
+%expect 38
+%expect-rr 2
+%pure-parser
+%parse-param { ParserContext* ctx }
+%parse-param { void* scanner }
+%lex-param { void* scanner }
 
 %union {
     double real;
     char* id;
+    CustomList list;
 }
-/* ESTADO INICIAL DE LA CALCULADORA */
-%start linea
-%type <real> linea NumExpr Termino AsignacionDeVariable
-%token EXIT
-%token CONVERT_ALL
-%token TABLE PRINTL print
-%token ERROR HELP COMENTARIO
-/* TOKENS NUMERICOS */
+
+%code {
+    // Firma para pure-parser + lex-param: yylex(&yylval, scanner)
+    int yylex(YYSTYPE* yylval, void* scanner);
+    void yyerror(ParserContext* ctx, void* scanner, const char* s);
+}
+
+%token EXIT CONVERT_ALL TABLE PRINTL print ERROR HELP COMENTARIO
+%token TKN_IF TKN_ELSE
 %token <id> TKN_ID
 %token <real> TKN_NUM
 %token TKN_ARROW
 %token <id> TKN_BODY
-/* Comparadores */
 %token TKN_EQ TKN_NE TKN_LT TKN_LE TKN_GT TKN_GE
-/* Operadores Lógicos */
 %token TKN_AND TKN_OR TKN_XOR TKN_NOR
-/* Asignación de variables */
 %token TKN_SUM_ASSIGN TKN_RES_ASSIGN TKN_MUL_ASSIGN TKN_DIV_ASSIGN
-/* OPERACIONES BASICAS */
 %token DMAS DMENOS 
 %token TKN_CBRT TKN_SQRT TKN_ABS
-/* FUNCIONES TRIGONOMETRICAS */
 %token deg TKN_COS TKN_SEN TKN_TAN 
 %token TKN_SEC TKN_CSC TKN_CTG 
 %token TKN_ACOS TKN_ASEN TKN_ATAN TKN_ATAN2
-/* FUNCIONES HIPERBOLICAS */
 %token TKN_COSH TKN_SENH TKN_TANH
-/* FUNCIONES EXPONENCIALES Y LOGARITMICAS */
 %token TKN_LOG TKN_LOG10 TKN_EXP
-/* CONVERSIONES */
-%token BIN TRN CTN PTL SNR HPT OCT NNR HXD DEC ROM 
-/*PRECEDENCIA DE LOS SIMBOLOS MATEMATICOS */
+%token BIN TRN CTN PTL SNR HPT OCT NNR HXD DEC ROM
+
+%type <real> linea NumExpr Termino AsignacionDeVariable Bloque Sentencia
+%type <list> ArgLista DefLista
+
 %right  '=' TKN_SUM_ASSIGN TKN_RES_ASSIGN TKN_MUL_ASSIGN TKN_DIV_ASSIGN
 %right  '?' ':'
 %left   TKN_OR TKN_NOR
@@ -93,7 +91,9 @@
 %nonassoc '[' ']'
 %nonassoc '{' '}'
 %right    '|' 
+
 %%
+
 linea
     :   linea AsignacionDeVariable '\n' { ctx->nlines++; }
     |   AsignacionDeVariable '\n'       { ctx->nlines++; }
@@ -102,6 +102,7 @@ linea
     |   linea error '\n'                { ctx->nlines++; yyerrok; } 
     |   error '\n'                      { ctx->nlines++; yyerrok; }
     ;
+
 Comandos
     :   EXIT        { exit(EXIT_SUCCESS); }
     |   ERROR       { printf("%sError léxico detectado%s\n", PROJO, NORMAL); }
@@ -114,11 +115,12 @@ Comandos
             ctx->last_result = $3;
             if (!ctx->is_sub_eval) printf("%s\t>>\t%s%.16f%s\n", NAMARILLO, CAZUL, $3, NORMAL); 
         }
-    |   HELP        {;}
+    |   HELP        { mostrarInfo(); }
     |   Conversion  {;}
     |   COMENTARIO  {;}
     |   PRINTL '(' ')' { printf("%s-------------------------------%s\n", HCELESTE, NORMAL); }
     ;
+
 AsignacionDeVariable
     :   TKN_ID '=' NumExpr                  {
             agregarTokenValor($1,$3);
@@ -131,6 +133,18 @@ AsignacionDeVariable
             agregarTokenValor($1, nuevo);
             $$=nuevo; ctx->last_result = nuevo;
             free($1);
+        }
+    |   TKN_ID '(' DefLista ')' TKN_ARROW TKN_BODY %dprec 2 {
+            char buf[256] = "";
+            for(int i=0; i<$3.count; i++) {
+                strcat(buf, $3.names[i]);
+                if(i < $3.count-1) strcat(buf, ",");
+                free($3.names[i]);
+            }
+            agregarFuncion($1, buf, $6);
+            printf("%sFunción registrada:%s %s(%s) => %s\n", NVERDE, NORMAL, $1, buf, $6);
+            $$ = 0;
+            free($1); free($6);
         }
     |   TKN_ID TKN_RES_ASSIGN NumExpr       {
             double actual = valorDelToken($1);
@@ -153,21 +167,44 @@ AsignacionDeVariable
             $$=nuevo; ctx->last_result = nuevo;
             free($1);
         }
-    /* Definición de función: f(x) => x^2 */
-    |   TKN_ID '(' TKN_ID ')' TKN_ARROW TKN_BODY {
-            agregarFuncion($1, $6);
-            printf("%sFunción registrada:%s %s(%s) => %s\n", NVERDE, NORMAL, $1, $3, $6);
-            $$ = 0; // Por ahora retorna 0 la definición
-            free($1); free($3); free($6);
+    ;
+
+DefLista
+    :   TKN_ID { 
+            $$.names[0] = $1; 
+            $$.count = 1; 
+        }
+    |   DefLista ',' TKN_ID {
+            $$ = $1;
+            if ($$.count < 10) {
+                $$.names[$$.count] = $3;
+                $$.count++;
+            }
         }
     ;
+
+ArgLista
+    :   NumExpr { 
+            $$.vals[0] = $1; 
+            $$.count = 1; 
+        }
+    |   ArgLista ',' NumExpr {
+            $$ = $1;
+            if ($$.count < 10) {
+                $$.vals[$$.count] = $3;
+                $$.count++;
+            }
+        }
+    ;
+
 Termino 
     :   TKN_NUM             { $$ = $1; }
     |   TKN_ID              {
             $$ = valorDelToken($1);
-            free($1); // Vital al usar strdup en Flex
+            free($1);
         }
     ;
+
 Conversion
     :   BIN '(' NumExpr ')' { toBin($3); }
     |   TRN '(' NumExpr ')' { toTrn($3); }
@@ -182,39 +219,42 @@ Conversion
     |   ROM '(' NumExpr ')' { toRom($3); }
     |   CONVERT_ALL '(' NumExpr ')' { mostrarResultadoEnTodasLasBases($3); }
     ;
+
 NumExpr   
     :   Termino                         { $$ = $1;      }
     |   '+' NumExpr %prec UNPLUS        { $$ = $2;      }
     |   '-' NumExpr %prec UNMINUS       { $$ = (-1)*$2; }
-    /* POST-INCREMENTO: y++ */
+    |   Bloque                          { $$ = $1;      }
+    |   TKN_IF '(' NumExpr ')' Bloque TKN_ELSE Bloque {
+            $$ = ($3 != 0) ? $5 : $7;
+        }
+    |   TKN_IF '(' NumExpr ')' Bloque %dprec 1 {
+            $$ = ($3 != 0) ? $5 : 0;
+        }
     |   TKN_ID DMAS {
             double val = valorDelToken($1);
             agregarTokenValor($1, val + 1);
             $$ = val;
             free($1);
         }
-    /* POST-DECREMENTO: y-- */
     |   TKN_ID DMENOS {
             double val = valorDelToken($1);
             agregarTokenValor($1, val - 1);
             $$ = val;
             free($1);
         }
-    /* PRE-INCREMENTO: ++y */
     |   DMAS TKN_ID %prec UNPLUS {
             double nuevoVal = valorDelToken($2) + 1;
             agregarTokenValor($2, nuevoVal);
-            $$ = nuevoVal; // Devuelve el valor ya incrementado
+            $$ = nuevoVal;
             free($2);
         }
-    /* PRE-DECREMENTO: --y*/
     |   DMENOS TKN_ID %prec UNMINUS {
             double nuevoVal = valorDelToken($2) - 1;
             agregarTokenValor($2, nuevoVal);
-            $$ = nuevoVal; // Devuelve el valor ya incrementado
+            $$ = nuevoVal;
             free($2);
         }
-    /* Operaciones normales */
     |   NumExpr '+' NumExpr             { $$ = $1 + $3; }
     |   NumExpr '-' NumExpr             { $$ = $1 - $3; }
     |   NumExpr '*' NumExpr             { $$ = $1 * $3; }
@@ -249,16 +289,6 @@ NumExpr
     |   TKN_ASEN    '(' NumExpr ')'     { $$ = asin($3);    }
     |   TKN_ATAN    '(' NumExpr ')'     { $$ = atan($3);    }
     |   TKN_ATAN2   '(' NumExpr ',' NumExpr ')'   { $$ = atan2($3,$5); }
-    |   TKN_COS     '(' NumExpr deg ')' { $$ = cos($3*M_PI/180); }
-    |   TKN_SEN     '(' NumExpr deg ')' { $$ = sin($3*M_PI/180); }
-    |   TKN_TAN     '(' NumExpr deg ')' { $$ = tan($3*M_PI/180); }
-    |   TKN_SEC     '(' NumExpr deg ')' { $$ = 1/cos($3*M_PI/180); }
-    |   TKN_CSC     '(' NumExpr deg ')' { $$ = 1/sin($3*M_PI/180); }
-    |   TKN_CTG     '(' NumExpr deg ')' { $$ = 1/tan($3*M_PI/180); }
-    |   deg TKN_ACOS    '(' NumExpr ')' { $$ = acos($4)*180/M_PI; }
-    |   deg TKN_ASEN    '(' NumExpr ')' { $$ = asin($4)*180/M_PI; }
-    |   deg TKN_ATAN    '(' NumExpr ')' { $$ = atan($4)*180/M_PI; }
-    |   deg TKN_ATAN2   '(' NumExpr ',' NumExpr ')'   { $$ = atan2($4,$6)*180/M_PI; }
     |   TKN_COSH    '(' NumExpr ')'     { $$ = cosh($3); }
     |   TKN_SENH    '(' NumExpr ')'     { $$ = sinh($3); }
     |   TKN_TANH    '(' NumExpr ')'     { $$ = tanh($3); }
@@ -273,13 +303,12 @@ NumExpr
     |   TKN_LOG2    '(' NumExpr ')'     { $$ = log2F($3); }
     |   TKN_GAMMA   '(' NumExpr ')'     { $$ = gammaF($3); }
     |   TKN_HYPOT   '(' NumExpr ',' NumExpr ')' { $$ = hypotF($3,$5);}
-    /* Llamada a función: f(10) */
-    |   TKN_ID '(' NumExpr ')' {
-            const char* cuerpo = obtenerCuerpoFuncion($1);
-            if (cuerpo) {
-                $$ = evaluarCuerpo(cuerpo, $3);
+    |   TKN_ID '(' ArgLista ')' %dprec 1 {
+            const char* full_def = obtenerCuerpoFuncion($1);
+            if (full_def) {
+                $$ = evaluarCuerpoMultiparams($1, $3.vals, $3.count);
             } else {
-                $$ = valorDelToken($1) * $3;
+                $$ = valorDelToken($1) * $3.vals[0];
             }
             free($1);
         }
@@ -288,10 +317,29 @@ NumExpr
     |   NumExpr     '[' NumExpr ']'     { $$ = $1 * $3; }
     |   NumExpr     '{' NumExpr '}'     { $$ = $1 * $3; }
     ;
+
+Bloque
+    :   '{' ListaSentencias '}' { $$ = ctx->last_result; }
+    ;
+
+ListaSentencias
+    :   Sentencia
+    |   ListaSentencias ';' Sentencia
+    |   ListaSentencias Sentencia
+    ;
+
+Sentencia
+    :   AsignacionDeVariable { ctx->last_result = $1; $$ = $1; }
+    |   NumExpr { ctx->last_result = $1; $$ = $1; }
+    |   '\n' { ; }
+    ;
+
 %%
-void yyerror(ParserContext* ctx, char const *s) { 
-    fprintf(stderr, "%s>> Error de sintaxis: Verifique la expresión%s\n", PROJO, NORMAL); 
+
+void yyerror(ParserContext* ctx, void* scanner, char const *s) { 
+    fprintf(stderr, "%s>> Error de sintaxis: %s%s\n", PROJO, s, NORMAL); 
 }
+
 int main()
 {
     setbuf(stdout, NULL);
@@ -307,7 +355,7 @@ int main()
     ctx.is_sub_eval = 0;
     ctx.nlines = 0;
 
-    yyparse(&ctx);
+    yyparse(&ctx, scanner);
     
     printf("Se han analizado %s%d%s líneas.\n", NVERDE, ctx.nlines, NORMAL);
     yylex_destroy(scanner);

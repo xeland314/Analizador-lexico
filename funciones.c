@@ -373,10 +373,8 @@ void toRom(double numero)
     cambiarARomano(numero);    
 }
 
-/* Implementación de la evaluación recursiva */
-#include "gramatica.tab.h"
 
-/* Implementación de la evaluación recursiva */
+/* Implementación de la evaluación recursiva con múltiples parámetros */
 #include "gramatica.tab.h"
 
 // Declaraciones de Flex para re-entrancia
@@ -386,38 +384,52 @@ extern int yylex_destroy(void* scanner);
 extern YY_BUFFER_STATE yy_scan_string(const char *str, void* scanner);
 extern void yy_delete_buffer(YY_BUFFER_STATE buffer, void* scanner);
 
-extern int yyparse(ParserContext* ctx);
+extern int yyparse(ParserContext* ctx, void* scanner);
 extern double valorDelToken(const char* token);
 extern void agregarTokenValor(const char* token, double valor);
 
-double evaluarCuerpo(const char* cuerpo, double arg) {
-    // 1. Guardar x actual
-    double old_x = valorDelToken("x");
-    agregarTokenValor("x", arg);
+double evaluarCuerpoMultiparams(const char* nombre_func, double* args, int num_args) {
+    const char* full_def = obtenerCuerpoFuncion(nombre_func);
+    if (!full_def) return 0;
 
-    // 2. Preparar cuerpo con un newline (requerido por la gramática)
+    // Clonar para no romper el original
+    char* def_copy = strdup(full_def);
+    char* params_str = strtok(def_copy, "|");
+    char* body = strtok(NULL, "|");
+
+    if (!params_str || !body) {
+        free(def_copy);
+        return 0;
+    }
+
+    // 1. Asignar parámetros a la tabla de símbolos
+    char* param_name = strtok(params_str, ",");
+    int i = 0;
+    while (param_name && i < num_args) {
+        agregarTokenValor(param_name, args[i]);
+        param_name = strtok(NULL, ",");
+        i++;
+    }
+
+    // 2. Preparar cuerpo
     char buffer_cuerpo[512];
-    snprintf(buffer_cuerpo, sizeof(buffer_cuerpo), "%s\n", cuerpo);
+    snprintf(buffer_cuerpo, sizeof(buffer_cuerpo), "%s\n", body);
 
-    // 3. Inicializar nuevo escáner para el sub-análisis
+    // 3. Evaluar
     void* sub_scanner;
     yylex_init(&sub_scanner);
     YY_BUFFER_STATE bp = yy_scan_string(buffer_cuerpo, sub_scanner);
 
-    // 4. Configurar contexto del parser
     ParserContext sub_ctx;
     sub_ctx.scanner = sub_scanner;
     sub_ctx.last_result = 0;
     sub_ctx.is_sub_eval = 1;
 
-    // 5. Ejecutar sub-parser
-    yyparse(&sub_ctx);
+    yyparse(&sub_ctx, sub_scanner);
 
-    // 6. Limpiar
     yy_delete_buffer(bp, sub_scanner);
     yylex_destroy(sub_scanner);
     
-    // 7. Restaurar x y retornar resultado
-    agregarTokenValor("x", old_x);
+    free(def_copy);
     return sub_ctx.last_result;
 }
