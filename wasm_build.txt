@@ -1,0 +1,9 @@
+install
++- install calculadora
+   +- compile exe calculadora ReleaseSmall wasm32-wasi failure
+error: warning(link): unexpected LLD stderr:
+wasm-ld: warning: function signature mismatch: mostrarInfo
+>>> defined as () -> i32 in .zig-cache\o\5c77b2611d820a5310f0e93f23637d87\gramatica.tab.o
+>>> defined as () -> void in .zig-cache\o\9ce4da65b836a01d7886db9f79f777b8\lex.yy.o
+
+

@@ -29,32 +29,54 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
+    // Detectamos si el target es WASM para agregar flags específicos
+    const t = target.result;
+    const is_wasm = t.cpu.arch == .wasm32;
+
     // 3. Añadimos los archivos C y el objeto de Zig al ejecutable
     exe.addObject(tokens_obj);
-    
-    exe.addCSourceFiles(.{
-        .files = &.{
-            "gramatica.tab.c",
-            "lex.yy.c",
-            "funciones.c",
-            "math_2.c",
-        },
-        .flags = &.{
-            "-std=c99",
-            "-Wno-everything",
-            "-D_USE_MATH_DEFINES",
-            "-DEINTR=4",
-        },
-    });
 
-    exe.linkLibC();
-    
-    // Configuraciones WASM si es necesario
-    const t = target.result;
-    if (t.cpu.arch == .wasm32) {
+    // Flags base de C
+    const base_flags = &[_][]const u8{
+        "-std=c99",
+        "-Wno-everything",
+        "-D_USE_MATH_DEFINES",
+        "-DEINTR=4",
+    };
+
+    if (is_wasm) {
+        // En WASM, bison genera setjmp.h que requiere la propuesta de Exception Handling.
+        // Usamos nuestro stub en wasm_compat/ que se incluye antes que el musl header.
+        exe.addIncludePath(b.path("wasm_compat"));
+        exe.addCSourceFiles(.{
+            .files = &.{
+                "gramatica.tab.c",
+                "lex.yy.c",
+                "funciones.c",
+                "math_2.c",
+            },
+            .flags = &.{
+                "-std=c99",
+                "-Wno-everything",
+                "-D_USE_MATH_DEFINES",
+                "-DEINTR=4",
+            },
+        });
         exe.rdynamic = true;
         exe.entry = .disabled;
+    } else {
+        exe.addCSourceFiles(.{
+            .files = &.{
+                "gramatica.tab.c",
+                "lex.yy.c",
+                "funciones.c",
+                "math_2.c",
+            },
+            .flags = base_flags,
+        });
     }
+
+    exe.linkLibC();
 
     b.installArtifact(exe);
 }
