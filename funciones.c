@@ -377,14 +377,14 @@ void toRom(double numero)
 /* Implementación de la evaluación recursiva con múltiples parámetros */
 #include "gramatica.tab.h"
 
-// Declaraciones de Flex para re-entrancia
+// Declaraciones de Flex para evaluación recursiva global
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
-extern int yylex_init(void** scanner);
-extern int yylex_destroy(void* scanner);
-extern YY_BUFFER_STATE yy_scan_string(const char *str, void* scanner);
-extern void yy_delete_buffer(YY_BUFFER_STATE buffer, void* scanner);
+extern YY_BUFFER_STATE yy_scan_string(const char *str);
+extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
+extern void yy_switch_to_buffer(YY_BUFFER_STATE new_buffer);
+extern YY_BUFFER_STATE obtener_buffer_actual();
 
-extern int yyparse(ParserContext* ctx, void* scanner);
+extern int yyparse(ParserContext* ctx);
 extern double valorDelToken(const char* token);
 extern void agregarTokenValor(const char* token, double valor);
 
@@ -416,19 +416,19 @@ double evaluarCuerpoMultiparams(const char* nombre_func, double* args, int num_a
     snprintf(buffer_cuerpo, sizeof(buffer_cuerpo), "%s\n", body);
 
     // 3. Evaluar
-    void* sub_scanner;
-    yylex_init(&sub_scanner);
-    YY_BUFFER_STATE bp = yy_scan_string(buffer_cuerpo, sub_scanner);
+    YY_BUFFER_STATE old_bp = obtener_buffer_actual();
+    YY_BUFFER_STATE bp = yy_scan_string(buffer_cuerpo);
 
     ParserContext sub_ctx;
-    sub_ctx.scanner = sub_scanner;
     sub_ctx.last_result = 0;
     sub_ctx.is_sub_eval = 1;
 
-    yyparse(&sub_ctx, sub_scanner);
+    yyparse(&sub_ctx);
 
-    yy_delete_buffer(bp, sub_scanner);
-    yylex_destroy(sub_scanner);
+    yy_delete_buffer(bp);
+    if (old_bp) {
+        yy_switch_to_buffer(old_bp);
+    }
     
     free(def_copy);
     return sub_ctx.last_result;

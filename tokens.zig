@@ -23,7 +23,7 @@ fn getFuncTable() *std.StringHashMap([]const u8) {
     return &function_table;
 }
 
-export fn agregarFuncion(nombre: [*c]const u8, params: [*c]const u8, cuerpo: [*c]const u8) callconv(.C) void {
+export fn agregarFuncion(nombre: [*c]const u8, params: [*c]const u8, cuerpo: [*c]const u8) callconv(.c) void {
     const table = getFuncTable();
     const key = std.mem.span(nombre);
     const p = std.mem.span(params);
@@ -48,14 +48,14 @@ export fn agregarFuncion(nombre: [*c]const u8, params: [*c]const u8, cuerpo: [*c
     };
 }
 
-export fn obtenerCuerpoFuncion(nombre: [*c]const u8) callconv(.C) [*c]const u8 {
+export fn obtenerCuerpoFuncion(nombre: [*c]const u8) callconv(.c) [*c]const u8 {
     const table = getFuncTable();
     const key = std.mem.span(nombre);
     const body = table.get(key) orelse return null;
     return body.ptr;
 }
 
-export fn agregarTokenValor(token: [*c]const u8, valor: f64) callconv(.C) void {
+export fn agregarTokenValor(token: [*c]const u8, valor: f64) callconv(.c) void {
     const table = getTable();
     const key = std.mem.span(token);
     
@@ -73,7 +73,7 @@ export fn agregarTokenValor(token: [*c]const u8, valor: f64) callconv(.C) void {
     };
 }
 
-export fn valorDelToken(token: [*c]const u8) callconv(.C) f64 {
+export fn valorDelToken(token: [*c]const u8) callconv(.c) f64 {
     if (!initialized) return 0.0;
     const table = getTable();
     const key = std.mem.span(token);
@@ -81,7 +81,7 @@ export fn valorDelToken(token: [*c]const u8) callconv(.C) f64 {
     return table.get(key) orelse 0.0;
 }
 
-export fn printTableValues() callconv(.C) void {
+export fn printTableValues() callconv(.c) void {
     if (!initialized) {
         std.debug.print("Tabla vacía.\n", .{});
         return;

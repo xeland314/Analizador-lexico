@@ -1,7 +1,6 @@
 %code requires {
     typedef struct {
         double last_result;
-        void* scanner;
         int is_sub_eval;
         int nlines;
     } ParserContext;
@@ -28,12 +27,9 @@
 %}    
 
 %glr-parser
-%expect 38
+%expect 13
 %expect-rr 2
-%pure-parser
 %parse-param { ParserContext* ctx }
-%parse-param { void* scanner }
-%lex-param { void* scanner }
 
 %union {
     double real;
@@ -42,9 +38,9 @@
 }
 
 %code {
-    // Firma para pure-parser + lex-param: yylex(&yylval, scanner)
-    int yylex(YYSTYPE* yylval, void* scanner);
-    void yyerror(ParserContext* ctx, void* scanner, const char* s);
+    int yylex(void);
+    void yyerror(ParserContext* ctx, const char* s);
+    int evaluarBuiltin(const char* name, double* args, int count, double* out);
 }
 
 %token EXIT CONVERT_ALL TABLE PRINTL print ERROR HELP COMENTARIO
@@ -57,12 +53,7 @@
 %token TKN_AND TKN_OR TKN_XOR TKN_NOR
 %token TKN_SUM_ASSIGN TKN_RES_ASSIGN TKN_MUL_ASSIGN TKN_DIV_ASSIGN
 %token DMAS DMENOS 
-%token TKN_CBRT TKN_SQRT TKN_ABS
-%token deg TKN_COS TKN_SEN TKN_TAN 
-%token TKN_SEC TKN_CSC TKN_CTG 
-%token TKN_ACOS TKN_ASEN TKN_ATAN TKN_ATAN2
-%token TKN_COSH TKN_SENH TKN_TANH
-%token TKN_LOG TKN_LOG10 TKN_EXP
+
 %token BIN TRN CTN PTL SNR HPT OCT NNR HXD DEC ROM
 
 %type <real> linea NumExpr Termino AsignacionDeVariable Bloque Sentencia
@@ -78,14 +69,7 @@
 %left   '+' '-'
 %left   '*' '/'
 %left   '%' '!'
-%right  '^' TKN_SQRT TKN_EXP TKN_LOG TKN_LOG10 TKN_LOG2 TKN_CBRT 
-%left deg 
-%right  TKN_ABS
-%right  TKN_COS TKN_SEN TKN_TAN 
-%right  TKN_COSH TKN_SENH TKN_TANH
-%right  TKN_ACOSH TKN_ASENH TKN_ATANH
-%right  TKN_ACOS TKN_ASEN TKN_ATAN TKN_ATAN2
-%right  TKN_GAMMA TKN_HYPOT
+%right  '^'
 %right  UNMINUS UNPLUS LNOT
 %nonassoc '(' ')'
 %nonassoc '[' ']'
@@ -134,7 +118,7 @@ AsignacionDeVariable
             $$=nuevo; ctx->last_result = nuevo;
             free($1);
         }
-    |   TKN_ID '(' DefLista ')' TKN_ARROW TKN_BODY %dprec 2 {
+    |   TKN_ID '(' DefLista ')' TKN_ARROW TKN_BODY {
             char buf[256] = "";
             for(int i=0; i<$3.count; i++) {
                 strcat(buf, $3.names[i]);
@@ -228,7 +212,7 @@ NumExpr
     |   TKN_IF '(' NumExpr ')' Bloque TKN_ELSE Bloque {
             $$ = ($3 != 0) ? $5 : $7;
         }
-    |   TKN_IF '(' NumExpr ')' Bloque %dprec 1 {
+    |   TKN_IF '(' NumExpr ')' Bloque {
             $$ = ($3 != 0) ? $5 : 0;
         }
     |   TKN_ID DMAS {
@@ -274,48 +258,25 @@ NumExpr
     |   NumExpr '%' NumExpr             { $$ = fmod($1,$3);     }
     |   NumExpr '!'                     { $$ = factorial($1);   }
     |   NumExpr '^' NumExpr             { $$ = pow($1,$3);     }
-    |   TKN_ABS '(' NumExpr ')'         { $$ = fabs($3); }
+
     |   '|' NumExpr '|'                 { $$ = fabs($2); }
     |   '(' NumExpr ')'                 { $$ = $2;  }
     |   '[' NumExpr ']'                 { $$ = $2;  }
     |   '{' NumExpr '}'                 { $$ = $2;  }
-    |   TKN_COS     '(' NumExpr ')'     { $$ = cos($3);     }
-    |   TKN_SEN     '(' NumExpr ')'     { $$ = sin($3);     }
-    |   TKN_TAN     '(' NumExpr ')'     { $$ = tan($3);     }
-    |   TKN_SEC     '(' NumExpr ')'     { $$ = 1/cos($3);   }
-    |   TKN_CSC     '(' NumExpr ')'     { $$ = 1/sin($3);   }
-    |   TKN_CTG     '(' NumExpr ')'     { $$ = 1/tan($3);   }
-    |   TKN_ACOS    '(' NumExpr ')'     { $$ = acos($3);    }
-    |   TKN_ASEN    '(' NumExpr ')'     { $$ = asin($3);    }
-    |   TKN_ATAN    '(' NumExpr ')'     { $$ = atan($3);    }
-    |   TKN_ATAN2   '(' NumExpr ',' NumExpr ')'   { $$ = atan2($3,$5); }
-    |   TKN_COSH    '(' NumExpr ')'     { $$ = cosh($3); }
-    |   TKN_SENH    '(' NumExpr ')'     { $$ = sinh($3); }
-    |   TKN_TANH    '(' NumExpr ')'     { $$ = tanh($3); }
-    |   TKN_ACOSH   '(' NumExpr ')'     { $$ = acoshF($3); }
-    |   TKN_ASENH   '(' NumExpr ')'     { $$ = asenhF($3); }
-    |   TKN_ATANH   '(' NumExpr ')'     { $$ = atanhF($3); }
-    |   TKN_SQRT    '(' NumExpr ')'     { $$ = sqrtF($3); }
-    |   TKN_CBRT    '(' NumExpr ')'     { $$ = cbrtF($3); }
-    |   TKN_EXP     '(' NumExpr ')'     { $$ = exp($3); }
-    |   TKN_LOG     '(' NumExpr ')'     { $$ = log($3); }
-    |   TKN_LOG10   '(' NumExpr ')'     { $$ = log10($3); }
-    |   TKN_LOG2    '(' NumExpr ')'     { $$ = log2F($3); }
-    |   TKN_GAMMA   '(' NumExpr ')'     { $$ = gammaF($3); }
-    |   TKN_HYPOT   '(' NumExpr ',' NumExpr ')' { $$ = hypotF($3,$5);}
-    |   TKN_ID '(' ArgLista ')' %dprec 1 {
-            const char* full_def = obtenerCuerpoFuncion($1);
-            if (full_def) {
-                $$ = evaluarCuerpoMultiparams($1, $3.vals, $3.count);
+    |   TKN_ID '(' ArgLista ')' {
+            double res = 0;
+            if (evaluarBuiltin($1, $3.vals, $3.count, &res)) {
+                $$ = res;
             } else {
-                $$ = valorDelToken($1) * $3.vals[0];
+                const char* full_def = obtenerCuerpoFuncion($1);
+                if (full_def) {
+                    $$ = evaluarCuerpoMultiparams($1, $3.vals, $3.count);
+                } else {
+                    $$ = valorDelToken($1) * $3.vals[0];
+                }
             }
             free($1);
         }
-    |   NumExpr     '|' NumExpr '|'     { $$ = $1 * fabs($3); }
-    |   NumExpr     '(' NumExpr ')'     { $$ = $1 * $3; }
-    |   NumExpr     '[' NumExpr ']'     { $$ = $1 * $3; }
-    |   NumExpr     '{' NumExpr '}'     { $$ = $1 * $3; }
     ;
 
 Bloque
@@ -336,7 +297,7 @@ Sentencia
 
 %%
 
-void yyerror(ParserContext* ctx, void* scanner, char const *s) { 
+void yyerror(ParserContext* ctx, char const *s) { 
     fprintf(stderr, "%s>> Error de sintaxis: %s%s\n", PROJO, s, NORMAL); 
 }
 
@@ -345,19 +306,55 @@ int main()
     setbuf(stdout, NULL);
     printf("\t\t%sRECONOCEDOR DE EXPRESIONES MATEMÁTICAS%s\n", SCELESTE, NORMAL);
     
-    void* scanner;
-    yylex_init(&scanner);
-    yyset_in(stdin, scanner);
-    
     ParserContext ctx;
-    ctx.scanner = scanner;
     ctx.last_result = 0;
     ctx.is_sub_eval = 0;
     ctx.nlines = 0;
 
-    yyparse(&ctx, scanner);
+    yyparse(&ctx);
     
     printf("Se han analizado %s%d%s líneas.\n", NVERDE, ctx.nlines, NORMAL);
-    yylex_destroy(scanner);
+    return 0;
+}
+
+int is_builtin(const char* name, const char* builtin) {
+    while (*name && *builtin) {
+        char c1 = *name >= 'A' && *name <= 'Z' ? *name + 32 : *name;
+        char c2 = *builtin >= 'A' && *builtin <= 'Z' ? *builtin + 32 : *builtin;
+        if (c1 != c2) return 0;
+        name++; builtin++;
+    }
+    return *name == *builtin;
+}
+
+int evaluarBuiltin(const char* name, double* args, int count, double* out) {
+    if (count == 1) {
+        if (is_builtin(name, "sin") || is_builtin(name, "sen")) { *out = sin(args[0]); return 1; }
+        if (is_builtin(name, "cos")) { *out = cos(args[0]); return 1; }
+        if (is_builtin(name, "tan")) { *out = tan(args[0]); return 1; }
+        if (is_builtin(name, "sec")) { *out = 1.0/cos(args[0]); return 1; }
+        if (is_builtin(name, "csc") || is_builtin(name, "cosec")) { *out = 1.0/sin(args[0]); return 1; }
+        if (is_builtin(name, "ctg") || is_builtin(name, "cot") || is_builtin(name, "cotan")) { *out = 1.0/tan(args[0]); return 1; }
+        if (is_builtin(name, "asin") || is_builtin(name, "asen") || is_builtin(name, "arcsen")) { *out = asin(args[0]); return 1; }
+        if (is_builtin(name, "acos") || is_builtin(name, "arccos")) { *out = acos(args[0]); return 1; }
+        if (is_builtin(name, "atan") || is_builtin(name, "arctan")) { *out = atan(args[0]); return 1; }
+        if (is_builtin(name, "sinh") || is_builtin(name, "senh")) { *out = sinh(args[0]); return 1; }
+        if (is_builtin(name, "cosh")) { *out = cosh(args[0]); return 1; }
+        if (is_builtin(name, "tanh")) { *out = tanh(args[0]); return 1; }
+        if (is_builtin(name, "asinh") || is_builtin(name, "asenh") || is_builtin(name, "arcsenh")) { *out = asenhF(args[0]); return 1; }
+        if (is_builtin(name, "acosh") || is_builtin(name, "arccosh")) { *out = acoshF(args[0]); return 1; }
+        if (is_builtin(name, "atanh") || is_builtin(name, "arctanh")) { *out = atanhF(args[0]); return 1; }
+        if (is_builtin(name, "sqrt")) { *out = sqrtF(args[0]); return 1; }
+        if (is_builtin(name, "cbrt")) { *out = cbrtF(args[0]); return 1; }
+        if (is_builtin(name, "exp")) { *out = exp(args[0]); return 1; }
+        if (is_builtin(name, "log") || is_builtin(name, "ln")) { *out = log(args[0]); return 1; }
+        if (is_builtin(name, "log10")) { *out = log10(args[0]); return 1; }
+        if (is_builtin(name, "log2")) { *out = log2F(args[0]); return 1; }
+        if (is_builtin(name, "abs")) { *out = fabs(args[0]); return 1; }
+        if (is_builtin(name, "gamma")) { *out = gammaF(args[0]); return 1; }
+    } else if (count == 2) {
+        if (is_builtin(name, "atan2")) { *out = atan2(args[0], args[1]); return 1; }
+        if (is_builtin(name, "hypot")) { *out = hypotF(args[0], args[1]); return 1; }
+    }
     return 0;
 }

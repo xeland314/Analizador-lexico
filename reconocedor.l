@@ -143,30 +143,6 @@ ERROR           {label}|{simbolos}
 PI          [Pp][Ii]
 EULER       [Ee][Uu][Ll][Ee][Rr]
 ABS         [Aa][Bb][Ss]
-SQRT        [Ss][Qq][Rr][Tt]
-CBRT        [Cc][Bb][Rr][Tt]
-COS         [Cc][Oo][Ss]
-SEN         [Ss]([Ee]|[Ii])[Nn]
-TAN         [Tt]([Aa][Nn]|[Gg])
-SEC         [Ss][Ee][Cc]
-CSC         [Cc][Oo]?[Ss][Ee]?[Cc]
-CTG         [Cc][Oo]?[Tt][Aa]?([Gg]|[Nn])
-ACOS        [Aa]([Rr][Cc])?{COS}
-ASEN        [Aa]([Rr][Cc])?{SEN}
-ATAN        [Aa]([Rr][Cc])?{TAN}
-ATAN2       {ATAN}(2)
-COSH        {COS}[Hh]
-SENH        {SEN}[Hh]
-TANH        {TAN}[Hh]
-ACOSH       [Aa]([Rr][Cc])?{COS}[Hh]
-ASENH       [Aa]([Rr][Cc])?{SEN}[Hh]
-ATANH       [Aa]([Rr][Cc])?{TAN}[Hh]
-HYPOT       [Hh]([Yy]|[Ii])[Pp][Oo][Tt]
-LN          [Ll][Nn]
-LOG10       [Ll][Oo][Gg](10)?
-LOG2        [Ll][Oo][Gg](2)
-EXP         [Ee][Xx][Pp]
-GAMMA       [Gg][Aa][Mm]{1,2}[Aa]
 /* Signos */
 OPERADOR    (=|\+|\-|\*|\/|\^|%|"!"|","|"?"|":"|";")
 SUMAIGUAL   "+="
@@ -190,9 +166,6 @@ AGRUPACION  "("|")"|"["|"]"|"{"|"}"|"|"
 GRADOS      "º"|[Dd][Ee][Gg]
 %x BODY
 %option noyywrap
-%option always-interactive
-%option reentrant
-%option bison-bridge
 %%
 "#"[^#\n]*"#"       { return COMENTARIO; } /* Esto descarta los comentarios */
 
@@ -205,7 +178,7 @@ GRADOS      "º"|[Dd][Ee][Gg]
 {MASMAS}            { return DMAS; }
 {MENOSMENOS}        { return DMENOS; }
 {ARROW}             { BEGIN(BODY); return TKN_ARROW; }
-<BODY>[^\n\r]+      { yylval->id = strdup(yytext); BEGIN(INITIAL); return TKN_BODY; }
+<BODY>[^\n\r]+      { yylval.id = strdup(yytext); BEGIN(INITIAL); return TKN_BODY; }
 {EQ}                { return TKN_EQ; }
 {NE}                { return TKN_NE; }
 {LE}                { return TKN_LE; }
@@ -240,55 +213,30 @@ GRADOS      "º"|[Dd][Ee][Gg]
 
     /* 3. NÚMEROS Y CONSTANTES */
 
-{PI}                { yylval->real = M_PI; return TKN_NUM; }
-{EULER}             { yylval->real = M_E; return TKN_NUM; }
-{ABS}               { return TKN_ABS; }
-{COS}               { return TKN_COS; }
-{SEN}               { return TKN_SEN; }
-{TAN}               { return TKN_TAN; }
-{SEC}               { return TKN_SEC; }
-{CSC}               { return TKN_CSC; }
-{CTG}               { return TKN_CTG; }
-{COSH}              { return TKN_COSH; }
-{SENH}              { return TKN_SENH; }
-{TANH}              { return TKN_TANH; }
-{ACOSH}             { return TKN_ACOSH; }
-{ASENH}             { return TKN_ASENH; }
-{ATANH}             { return TKN_ATANH; }
-{HYPOT}             { return TKN_HYPOT; }
-{ACOS}              { return TKN_ACOS; }
-{ASEN}              { return TKN_ASEN; }
-{ATAN}              { return TKN_ATAN; }
-{ATAN2}             { return TKN_ATAN2; }
-{EXP}               { return TKN_EXP; }
-{LOG10}             { return TKN_LOG10; }
-{LOG2}              { return TKN_LOG2; }
-{LN}                { return TKN_LOG; }
-{SQRT}              { return TKN_SQRT; }
-{CBRT}              { return TKN_CBRT; }
-{GAMMA}             { return TKN_GAMMA; }
+{PI}                { yylval.real = M_PI; return TKN_NUM; }
+{EULER}             { yylval.real = M_E; return TKN_NUM; }
 {INFO}              { mostrarInfo(); return HELP; }
-{DECIMAL}           { decToDec(yytext); yylval->real = decimal.representacionNumerica; return TKN_NUM; }
-{BINARIO}           { binToDec(yytext); yylval->real = binario.representacionNumerica; return TKN_NUM;}
-{TERNARIO}          { trnToDec(yytext); yylval->real = ternario.representacionNumerica; return TKN_NUM; }
-{CUATERNARIO}       { ctnToDec(yytext); yylval->real = cuaternario.representacionNumerica; return TKN_NUM;}
-{QUINARIO}          { ptlToDec(yytext); yylval->real = quinario.representacionNumerica; return TKN_NUM;}
-{SENARIO}           { snrToDec(yytext); yylval->real = senario.representacionNumerica; return TKN_NUM;}
-{HEPTAL}            { hptToDec(yytext); yylval->real = heptal.representacionNumerica; return TKN_NUM;}
-{OCTAL}             { octToDec(yytext); yylval->real = octal.representacionNumerica; return TKN_NUM; }
-{NONARIO}           { nnrToDec(yytext); yylval->real = nonario.representacionNumerica; return TKN_NUM; }
-{HEXADECIMAL}       { hexToDec(yytext); yylval->real = hexadecimal.representacionNumerica; return TKN_NUM;}
-{ROMANO}            { romToDec(yytext); yylval->real = romano.representacionNumerica; return TKN_NUM;}
+{DECIMAL}           { decToDec(yytext); yylval.real = decimal.representacionNumerica; return TKN_NUM; }
+{BINARIO}           { binToDec(yytext); yylval.real = binario.representacionNumerica; return TKN_NUM;}
+{TERNARIO}          { trnToDec(yytext); yylval.real = ternario.representacionNumerica; return TKN_NUM; }
+{CUATERNARIO}       { ctnToDec(yytext); yylval.real = cuaternario.representacionNumerica; return TKN_NUM;}
+{QUINARIO}          { ptlToDec(yytext); yylval.real = quinario.representacionNumerica; return TKN_NUM;}
+{SENARIO}           { snrToDec(yytext); yylval.real = senario.representacionNumerica; return TKN_NUM;}
+{HEPTAL}            { hptToDec(yytext); yylval.real = heptal.representacionNumerica; return TKN_NUM;}
+{OCTAL}             { octToDec(yytext); yylval.real = octal.representacionNumerica; return TKN_NUM; }
+{NONARIO}           { nnrToDec(yytext); yylval.real = nonario.representacionNumerica; return TKN_NUM; }
+{HEXADECIMAL}       { hexToDec(yytext); yylval.real = hexadecimal.representacionNumerica; return TKN_NUM;}
+{ROMANO}            { romToDec(yytext); yylval.real = romano.representacionNumerica; return TKN_NUM;}
 
     /* 4. IDENTIFICADORES */
 
-{IDENTIFICADOR}     { yylval->id = strdup(yytext); return TKN_ID; }
+{IDENTIFICADOR}     { yylval.id = strdup(yytext); return TKN_ID; }
 
     /* 5. CARACTERES SIMPLES */
 
 {OPERADOR}          { return *yytext; }
 {AGRUPACION}        { return *yytext; }
-{GRADOS}            { return deg; }
+
 
     /* 6. MANEJO DE ERRORES Y ESPACIOS */
 
@@ -297,3 +245,7 @@ GRADOS      "º"|[Dd][Ee][Gg]
 [\n]                { return *yytext; }
 .                   { printf("Cáracter no reconocido: %s\n", yytext); return ERROR; }
 %%
+
+YY_BUFFER_STATE obtener_buffer_actual() {
+    return YY_CURRENT_BUFFER;
+}

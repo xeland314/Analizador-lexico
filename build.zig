@@ -12,17 +12,21 @@ pub fn build(b: *std.Build) void {
     // 1. Creamos un paso de compilación para el archivo Zig como un objeto
     const tokens_obj = b.addObject(.{
         .name = "tokens_logic",
-        .root_source_file = b.path("tokens.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("tokens.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
     tokens_obj.linkLibC();
 
     // 2. Creamos el ejecutable, pero sin un root_source_file de Zig
     const exe = b.addExecutable(.{
         .name = "calculadora",
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+        }),
     });
 
     // 3. Añadimos los archivos C y el objeto de Zig al ejecutable
