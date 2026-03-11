@@ -41,6 +41,8 @@
     int yylex(void);
     void yyerror(ParserContext* ctx, const char* s);
     int evaluarBuiltin(const char* name, double* args, int count, double* out);
+    void mostrarInfo(void);
+    void printline(void);
 }
 
 %token EXIT CONVERT_ALL TABLE PRINTL print ERROR HELP COMENTARIO
