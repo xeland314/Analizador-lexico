@@ -126,8 +126,8 @@ Gracias a que Zig actúa como compilador de C, ya no es necesario configurar com
 
 ### Requisitos
 
-* **Flex / Bison** (Instalados en el sistema).
-* **Zig 0.13.0** o superior.
+* **Flex / Bison** (GnuWin32 en Windows o instalado en el sistema).
+* **Zig 0.15.2** o superior.
 
 ## Ejemplos de Uso
 
@@ -168,3 +168,36 @@ Resultado:
   <img src="imgs/Captura1.png" width="500" title="entrada.txt">
   <img src="imgs/Captura2.png" width="500" title="salida.txt">
 </p>
+
+---
+
+## Changelog
+
+### v2.1 — Simplificación de Gramática y Soporte WASM
+
+#### Cambios en la gramática (`gramatica.y`)
+- Se eliminaron las ~22 reglas explícitas de funciones matemáticas embebidas (`TKN_COS '(' NumExpr ')'`, etc.) y las multiplicaciones implícitas ambíguas (`NumExpr '(' NumExpr ')'`).
+- Las funciones matemáticas ahora se evalúan a través del identificador genérico `TKN_ID '(' ArgLista ')'` usando la nueva función `evaluarBuiltin()`.
+- Conflictos del parser reducidos de **38 S/R + 2 R/R** a **13 S/R + 2 R/R** (mínimo inevitable por la ambigüedad dde definición vs. llamada de funciones).
+- Removidos `%expect` excesivos; se documenta el conteo real de conflictos.
+
+#### Cambios en el lexer (`reconocedor.l`)
+- Eliminados todos los tokens y reglas lexicas de funciones trigonométricas e hiperbólicas (`COS`, `SEN`, `TAN`, etc.). Ahora caen al patrón `IDENTIFICADOR`.
+- Removidas opciones `%option reentrant`, `%option bison-bridge`, `%option always-interactive` para compatibilidad con GnuWin32 flex 2.5.
+- `yylval->real` / `yylval->id` reemplazados por `yylval.real` / `yylval.id`.
+
+#### Nuevo evaluador builtin (`gramatica.y`)
+- Función `evaluarBuiltin(nombre, args, count, out)` case-insensitive.
+- Soporta: sin/sen, cos, tan, sec, csc, ctg, asin/asen, acos, atan, atan2, sinh/senh, cosh, tanh, asinh/asenh, acosh, atanh, sqrt, cbrt, exp, log/ln, log10, log2, abs, gamma, hypot.
+
+#### Soporte WASM (`build.zig`, `wasm_compat/setjmp.h`)
+- Creado stub `wasm_compat/setjmp.h` para eludir la restricción de `setjmp` en `wasm32-wasi` (el parser GLR de bison usa setjmp internamente).
+- `build.zig` detecta automáticamente el target WASM e incluye el directorio `wasm_compat/` primero en el path de búsqueda.
+- Comando de compilación: `zig build -Doptimize=ReleaseSmall -Dtarget=wasm32-wasi`
+- Tamaño del `.wasm` generado: **~142 KB** con `ReleaseSmall`.
+
+#### Actualización de `build.zig`
+- Sintaxis actualizada a **Zig 0.15.2** (`b.createModule(.{...})`).
+- `callconv(.C)` → `callconv(.c)` en `tokens.zig`.
+- Branch condicional `is_wasm` para compilacion nativa vs WebAssembly.
+

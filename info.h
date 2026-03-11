@@ -32,11 +32,13 @@ void sistemasNumericos()
 void funcionesMatematicas()
 {
     printf("%sFunciones Matemáticas:%s\n", CCELESTE, NORMAL);
-    printf("\t%sTrigonométricas:%s sen, cos, tan, sec, csc, ctg (usar 'deg' para grados)\n", NVERDE, NORMAL);
-    printf("\t%sInversas:%s asen, acos, atan, atan2\n", NVERDE, NORMAL);
-    printf("\t%sHiperbólicas:%s senh, cosh, tanh, asenh, acosh, atanh\n", NVERDE, NORMAL);
-    printf("\t%sLog/Exp:%s log, log10, log2, exp\n", NVERDE, NORMAL);
-    printf("\t%sOtras:%s sqrt, cbrt, abs, gamma, hypot, !\n", NVERDE, NORMAL);
+    printf("\t%sTrigonométricas:%s sen/sin, cos, tan, sec, csc, ctg\n", NVERDE, NORMAL);
+    printf("\t%sInversas:%s asen/asin, acos, atan, atan2(y,x)\n", NVERDE, NORMAL);
+    printf("\t%sHiperbólicas:%s senh/sinh, cosh, tanh, asenh, acosh, atanh\n", NVERDE, NORMAL);
+    printf("\t%sLog/Exp:%s log/ln, log10, log2, exp\n", NVERDE, NORMAL);
+    printf("\t%sOtras:%s sqrt, cbrt, abs, gamma, hypot(x,y), !\n", NVERDE, NORMAL);
+    printf("\t%sNota:%s Ahora evaluadas como identificadores: %ssin(x)%s en lugar de\n", NVERDE, NORMAL, NAMARILLO, NORMAL);
+    printf("\t      palabras reservadas. Case-insensitive: %sSIN(x)%s = %ssin(x)%s\n", NAMARILLO, NORMAL, NAMARILLO, NORMAL);
 }
 
 void operadoresYAsignaciones()
@@ -59,6 +61,21 @@ void comandosEspeciales()
     printf("\t%sBIN(n), HEX(n), ROM(n), ...%s: Convierte 'n' a la base indicada.\n", NAMARILLO, NORMAL);
 }
 
+void novedades()
+{
+    printf("%sNovedades - v2.1:%s\n", CCELESTE, NORMAL);
+    printf("\t%sGram\u00e1tica simplificada:%s las funciones matem\u00e1ticas ya no\n", NVERDE, NORMAL);
+    printf("\t  son palabras reservadas; evaluadas como %sidentificadores.%s\n", NAMARILLO, NORMAL);
+    printf("\t  Elimina conflictos de parser (antes: 38 S/R, ahora: 13 S/R).\n");
+    printf("\t%sFunciones de usuario multi-param:%s f(x,y) => x^2 + y^2\n", NVERDE, NORMAL);
+    printf("\t%sEvaluador builtin case-insensitive:%s SIN = Sin = sin = SEN\n", NVERDE, NORMAL);
+    printf("\t  Soporte de: sin, cos, tan, sec, csc, ctg, asin, acos, atan,\n");
+    printf("\t  atan2, sinh, cosh, tanh, asinh, acosh, atanh, sqrt, cbrt,\n");
+    printf("\t  exp, log/ln, log10, log2, abs, gamma, hypot\n");
+    printf("\t%sSoporte WASM:%s\n", NVERDE, NORMAL);
+    printf("\t  %szig build -Doptimize=ReleaseSmall -Dtarget=wasm32-wasi%s\n", NAMARILLO, NORMAL);
+}
+
 void mostrarInfo()
 {
     printline();
@@ -73,6 +90,8 @@ void mostrarInfo()
     operadoresYAsignaciones();
     printline();
     comandosEspeciales();
+    printline();
+    novedades();
     printline();
 }
 
