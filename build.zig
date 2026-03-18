@@ -79,4 +79,50 @@ pub fn build(b: *std.Build) void {
     exe.linkLibC();
 
     b.installArtifact(exe);
+
+    // 4. Paso de tests
+    const exe_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("tests.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    exe_tests.linkLibC();
+    exe_tests.addObject(tokens_obj);
+
+    const test_flags = &[_][]const u8{
+        "-std=c99",
+        "-Wno-everything",
+        "-D_USE_MATH_DEFINES",
+        "-DEINTR=4",
+        "-Dmain=__nomain__",
+    };
+
+    if (is_wasm) {
+        exe_tests.addIncludePath(b.path("wasm_compat"));
+        exe_tests.addCSourceFiles(.{
+            .files = &.{
+                "gramatica.tab.c",
+                "lex.yy.c",
+                "funciones.c",
+                "math_2.c",
+            },
+            .flags = test_flags,
+        });
+    } else {
+        exe_tests.addCSourceFiles(.{
+            .files = &.{
+                "gramatica.tab.c",
+                "lex.yy.c",
+                "funciones.c",
+                "math_2.c",
+            },
+            .flags = test_flags,
+        });
+    }
+
+    const run_exe_tests = b.addRunArtifact(exe_tests);
+    const test_step = b.step("test", "Run unit tests");
+    test_step.dependOn(&run_exe_tests.step);
 }
